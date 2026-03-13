@@ -1,0 +1,45 @@
+version: "3.9"
+
+services:
+  ollama:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        OLLAMA_VERSION: ${OLLAMA_VERSION:-latest}
+    image: ollama-intel:${OLLAMA_VERSION:-latest}
+    container_name: ollama-intel
+    restart: unless-stopped
+
+    # Intel GPU device passthrough
+    # Works for Intel Arc, Iris Xe, and integrated Intel graphics
+    devices:
+      - /dev/dri:/dev/dri       # DRM/KMS render nodes
+    group_add:
+      - video                   # access to /dev/dri devices
+      - render                  # access to renderD* nodes
+
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+      # Uncomment to set model storage location
+      # - OLLAMA_MODELS=/root/.ollama/models
+
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+
+    volumes:
+      # Persist downloaded models outside the container
+      - ollama_models:/root/.ollama
+
+    # Resource limits (tune to your system)
+    # mem_limit: 8g
+    # cpus: "4"
+
+volumes:
+  ollama_models:
+    driver: local
+    # Optionally bind-mount a host directory instead:
+    # driver_opts:
+    #   type: none
+    #   o: bind
+    #   device: /opt/ollama/models

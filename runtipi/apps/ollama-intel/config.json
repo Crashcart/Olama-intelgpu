@@ -1,0 +1,46 @@
+{
+  "name": "Ollama (Intel GPU)",
+  "id": "ollama-intel",
+  "available": true,
+  "short_desc": "Run large language models locally using your Intel GPU",
+  "author": "Ollama",
+  "port": 11434,
+  "categories": ["ai", "utilities"],
+  "description": "Ollama lets you run large language models (LLMs) locally on your own hardware. This version is optimized for Intel GPUs (Arc, Iris Xe, integrated graphics) using Intel's oneAPI compute runtime. Models are NOT bundled — download only what you need via the pull-model feature. Supports the OpenAI-compatible API.",
+  "tipi_version": 1,
+  "version": "latest",
+  "source": "https://github.com/ollama/ollama",
+  "website": "https://ollama.com",
+  "force_expose": false,
+  "generate_vapid_keys": false,
+  "url_suffix": "/",
+  "form_fields": [
+    {
+      "type": "text",
+      "label": "Ollama version tag",
+      "hint": "Docker image tag to use (e.g. latest, 0.3.14). Leave blank for latest.",
+      "placeholder": "latest",
+      "env_variable": "OLLAMA_VERSION",
+      "default": "latest",
+      "required": false
+    },
+    {
+      "type": "text",
+      "label": "Model to auto-pull on first start",
+      "hint": "Optional. Leave blank to pull models manually later. Examples: llama3.2:1b, mistral, phi3:mini",
+      "placeholder": "",
+      "env_variable": "OLLAMA_PULL_MODEL",
+      "default": "",
+      "required": false
+    },
+    {
+      "type": "text",
+      "label": "Models storage path",
+      "hint": "Host path to persist downloaded models. Defaults to Runtipi app data directory.",
+      "placeholder": "/runtipi/app-data/ollama-intel/models",
+      "env_variable": "OLLAMA_MODELS_PATH",
+      "default": "/runtipi/app-data/ollama-intel/models",
+      "required": false
+    }
+  ]
+}

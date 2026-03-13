@@ -1,0 +1,87 @@
+version: "3.9"
+
+# Runtipi app: ollama-intel
+# Variables injected by Runtipi from config.json form_fields:
+#   APP_PORT           — host port (set by Runtipi from config port field)
+#   OLLAMA_VERSION     — image tag (default: latest)
+#   OLLAMA_PULL_MODEL  — model to pull on startup (optional, empty = skip)
+#   OLLAMA_MODELS_PATH — host path for model storage
+
+services:
+  ollama-intel:
+    image: ollama/ollama:${OLLAMA_VERSION:-latest}
+    container_name: ollama-intel
+    restart: unless-stopped
+
+    # Intel GPU passthrough — works for Arc, Iris Xe, and integrated Intel graphics
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - video
+      - render
+
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+      # Auto-pull a model on first start if OLLAMA_PULL_MODEL is set
+      - OLLAMA_PULL_MODEL=${OLLAMA_PULL_MODEL:-}
+
+    ports:
+      - "${APP_PORT:-11434}:11434"
+
+    volumes:
+      # Models persist between restarts — NOT bundled in the image
+      - ${OLLAMA_MODELS_PATH:-/runtipi/app-data/ollama-intel/models}:/root/.ollama
+
+    # Optional: run model pull in an init container so the main service
+    # is always healthy regardless of download time
+    depends_on:
+      ollama-intel-init:
+        condition: service_completed_successfully
+
+    networks:
+      - tipi_main_network
+
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.ollama-intel.rule: "Host(`ollama-intel.${LOCAL_DOMAIN}`)"
+      traefik.http.routers.ollama-intel.entrypoints: "web,websecure"
+      traefik.http.services.ollama-intel.loadbalancer.server.port: "11434"
+      # Runtipi uses these labels to link the app in the dashboard
+      runtipi.managed: "true"
+
+  # Init container: starts Ollama briefly to pull the requested model, then exits.
+  # Skipped entirely if OLLAMA_PULL_MODEL is empty.
+  ollama-intel-init:
+    image: ollama/ollama:${OLLAMA_VERSION:-latest}
+    container_name: ollama-intel-init
+    restart: "no"
+    profiles:
+      - init
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - video
+      - render
+    volumes:
+      - ${OLLAMA_MODELS_PATH:-/runtipi/app-data/ollama-intel/models}:/root/.ollama
+    entrypoint: >
+      /bin/sh -c "
+        if [ -n \"$$OLLAMA_PULL_MODEL\" ]; then
+          echo 'Starting Ollama to pull model: '$$OLLAMA_PULL_MODEL;
+          ollama serve &
+          SERVE_PID=$$!;
+          sleep 5;
+          ollama pull $$OLLAMA_PULL_MODEL;
+          kill $$SERVE_PID;
+        else
+          echo 'No model specified, skipping pull.';
+        fi
+      "
+    environment:
+      - OLLAMA_PULL_MODEL=${OLLAMA_PULL_MODEL:-}
+    networks:
+      - tipi_main_network
+
+networks:
+  tipi_main_network:
+    external: true
