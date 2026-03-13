@@ -1,12 +1,12 @@
 {
-  "name": "Ollama (Intel GPU)",
-  "id": "ollama-intel",
+  "name": "Olama (Intel GPU)",
+  "id": "olama",
   "available": true,
   "short_desc": "Run large language models locally using your Intel GPU",
   "author": "Ollama",
   "port": 11434,
   "categories": ["ai", "utilities"],
-  "description": "Ollama lets you run large language models (LLMs) locally on your own hardware. This version is optimized for Intel GPUs (Arc, Iris Xe, integrated graphics) using Intel's oneAPI compute runtime. Models are NOT bundled — download only what you need via the pull-model feature. Supports the OpenAI-compatible API.",
+  "description": "Olama lets you run large language models (LLMs) locally on your own hardware. This version is optimized for Intel GPUs (Arc, Iris Xe, integrated graphics) using Intel's oneAPI compute runtime. Mistral is pulled automatically on first start as the default well-rounded model. Supports the OpenAI-compatible API.",
   "tipi_version": 1,
   "version": "latest",
   "source": "https://github.com/ollama/ollama",
@@ -27,19 +27,19 @@
     {
       "type": "text",
       "label": "Model to auto-pull on first start",
-      "hint": "Optional. Leave blank to pull models manually later. Examples: llama3.2:1b, mistral, phi3:mini",
-      "placeholder": "",
+      "hint": "Pulled automatically on first start. Change or leave blank to skip. Examples: llama3.2:1b, phi3:mini",
+      "placeholder": "mistral",
       "env_variable": "OLLAMA_PULL_MODEL",
-      "default": "",
+      "default": "mistral",
       "required": false
     },
     {
       "type": "text",
       "label": "Models storage path",
       "hint": "Host path to persist downloaded models. Defaults to Runtipi app data directory.",
-      "placeholder": "/runtipi/app-data/ollama-intel/models",
+      "placeholder": "/runtipi/app-data/olama/models",
       "env_variable": "OLLAMA_MODELS_PATH",
-      "default": "/runtipi/app-data/ollama-intel/models",
+      "default": "/runtipi/app-data/olama/models",
       "required": false
     }
   ]

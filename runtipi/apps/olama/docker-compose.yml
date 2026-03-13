@@ -1,16 +1,16 @@
 version: "3.9"
 
-# Runtipi app: ollama-intel
+# Runtipi app: olama
 # Variables injected by Runtipi from config.json form_fields:
 #   APP_PORT           — host port (set by Runtipi from config port field)
 #   OLLAMA_VERSION     — image tag (default: latest)
-#   OLLAMA_PULL_MODEL  — model to pull on startup (optional, empty = skip)
+#   OLLAMA_PULL_MODEL  — model to pull on startup (default: mistral)
 #   OLLAMA_MODELS_PATH — host path for model storage
 
 services:
-  ollama-intel:
+  olama:
     image: ollama/ollama:${OLLAMA_VERSION:-latest}
-    container_name: ollama-intel
+    container_name: olama
     restart: unless-stopped
 
     # Intel GPU passthrough — works for Arc, Iris Xe, and integrated Intel graphics
@@ -22,20 +22,19 @@ services:
 
     environment:
       - OLLAMA_HOST=0.0.0.0:11434
-      # Auto-pull a model on first start if OLLAMA_PULL_MODEL is set
-      - OLLAMA_PULL_MODEL=${OLLAMA_PULL_MODEL:-}
+      - OLLAMA_PULL_MODEL=${OLLAMA_PULL_MODEL:-mistral}
 
     ports:
       - "${APP_PORT:-11434}:11434"
 
     volumes:
       # Models persist between restarts — NOT bundled in the image
-      - ${OLLAMA_MODELS_PATH:-/runtipi/app-data/ollama-intel/models}:/root/.ollama
+      - ${OLLAMA_MODELS_PATH:-/runtipi/app-data/olama/models}:/root/.ollama
 
-    # Optional: run model pull in an init container so the main service
+    # Run model pull in an init container so the main service
     # is always healthy regardless of download time
     depends_on:
-      ollama-intel-init:
+      olama-init:
         condition: service_completed_successfully
 
     networks:
@@ -43,17 +42,16 @@ services:
 
     labels:
       traefik.enable: "true"
-      traefik.http.routers.ollama-intel.rule: "Host(`ollama-intel.${LOCAL_DOMAIN}`)"
-      traefik.http.routers.ollama-intel.entrypoints: "web,websecure"
-      traefik.http.services.ollama-intel.loadbalancer.server.port: "11434"
-      # Runtipi uses these labels to link the app in the dashboard
+      traefik.http.routers.olama.rule: "Host(`olama.${LOCAL_DOMAIN}`)"
+      traefik.http.routers.olama.entrypoints: "web,websecure"
+      traefik.http.services.olama.loadbalancer.server.port: "11434"
       runtipi.managed: "true"
 
-  # Init container: starts Ollama briefly to pull the requested model, then exits.
-  # Skipped entirely if OLLAMA_PULL_MODEL is empty.
-  ollama-intel-init:
+  # Init container: pulls the default model (mistral) on first start, then exits.
+  # Skipped if OLLAMA_PULL_MODEL is empty.
+  olama-init:
     image: ollama/ollama:${OLLAMA_VERSION:-latest}
-    container_name: ollama-intel-init
+    container_name: olama-init
     restart: "no"
     profiles:
       - init
@@ -63,11 +61,11 @@ services:
       - video
       - render
     volumes:
-      - ${OLLAMA_MODELS_PATH:-/runtipi/app-data/ollama-intel/models}:/root/.ollama
+      - ${OLLAMA_MODELS_PATH:-/runtipi/app-data/olama/models}:/root/.ollama
     entrypoint: >
       /bin/sh -c "
         if [ -n \"$$OLLAMA_PULL_MODEL\" ]; then
-          echo 'Starting Ollama to pull model: '$$OLLAMA_PULL_MODEL;
+          echo 'Starting Olama to pull model: '$$OLLAMA_PULL_MODEL;
           ollama serve &
           SERVE_PID=$$!;
           sleep 5;
@@ -78,7 +76,7 @@ services:
         fi
       "
     environment:
-      - OLLAMA_PULL_MODEL=${OLLAMA_PULL_MODEL:-}
+      - OLLAMA_PULL_MODEL=${OLLAMA_PULL_MODEL:-mistral}
     networks:
       - tipi_main_network
 

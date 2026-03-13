@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install.sh — Install Ollama with Intel GPU support via Docker
+# install.sh — Install Olama (Ollama + Intel GPU) via Docker
 # Usage: curl -fsSL <url>/install.sh | bash
 #        or: bash install.sh [--port PORT] [--data-dir DIR] [--version VERSION]
 
@@ -7,17 +7,17 @@ set -euo pipefail
 
 # ── Defaults ──────────────────────────────────────────────────────────────────
 OLLAMA_PORT="${OLLAMA_PORT:-11434}"
-OLLAMA_DATA_DIR="${OLLAMA_DATA_DIR:-/opt/ollama}"
+OLLAMA_DATA_DIR="${OLLAMA_DATA_DIR:-/opt/olama}"
 OLLAMA_VERSION="${OLLAMA_VERSION:-latest}"
-COMPOSE_PROJECT="ollama-intel"
+COMPOSE_PROJECT="olama"
 REPO_URL="https://raw.githubusercontent.com/Crashcart/Olama-intelgpu/main"
 
 # ── Color helpers ──────────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
-info()    { echo -e "${CYAN}[ollama-intel]${NC} $*"; }
-success() { echo -e "${GREEN}[ollama-intel]${NC} $*"; }
-warn()    { echo -e "${YELLOW}[ollama-intel]${NC} $*"; }
-error()   { echo -e "${RED}[ollama-intel]${NC} $*" >&2; exit 1; }
+info()    { echo -e "${CYAN}[olama]${NC} $*"; }
+success() { echo -e "${GREEN}[olama]${NC} $*"; }
+warn()    { echo -e "${YELLOW}[olama]${NC} $*"; }
+error()   { echo -e "${RED}[olama]${NC} $*" >&2; exit 1; }
 
 # ── Argument parsing ───────────────────────────────────────────────────────────
 while [[ $# -gt 0 ]]; do
@@ -27,8 +27,8 @@ while [[ $# -gt 0 ]]; do
     --version)    OLLAMA_VERSION="$2";  shift 2 ;;
     --help|-h)
       echo "Usage: $0 [--port PORT] [--data-dir DIR] [--version VERSION]"
-      echo "  --port        Host port to expose Ollama on (default: 11434)"
-      echo "  --data-dir    Directory to store models and config (default: /opt/ollama)"
+      echo "  --port        Host port to expose Olama on (default: 11434)"
+      echo "  --data-dir    Directory to store models and config (default: /opt/olama)"
       echo "  --version     Ollama version tag to install (default: latest)"
       exit 0 ;;
     *) warn "Unknown option: $1"; shift ;;
@@ -70,9 +70,9 @@ cat > "${COMPOSE_FILE}" <<EOF
 version: "3.9"
 
 services:
-  ollama:
+  olama:
     image: ollama/ollama:${OLLAMA_VERSION}
-    container_name: ollama-intel
+    container_name: olama
     restart: unless-stopped
     devices:
       - /dev/dri:/dev/dri
@@ -97,29 +97,29 @@ OLLAMA_DATA_DIR=${OLLAMA_DATA_DIR}
 EOF
 
 # ── Pull image & start ────────────────────────────────────────────────────────
-info "Pulling Ollama image (no model bundled — image is ~1GB)..."
+info "Pulling Ollama image (no model bundled — image is ~1 GB)..."
 $COMPOSE_CMD -f "${COMPOSE_FILE}" -p "${COMPOSE_PROJECT}" pull
 
-info "Starting Ollama container..."
+info "Starting Olama container..."
 $COMPOSE_CMD -f "${COMPOSE_FILE}" -p "${COMPOSE_PROJECT}" up -d
 
 # ── Wait for readiness ────────────────────────────────────────────────────────
-info "Waiting for Ollama to become ready..."
+info "Waiting for Olama to become ready..."
 RETRIES=20
 until curl -sf "http://localhost:${OLLAMA_PORT}/api/tags" &>/dev/null; do
   RETRIES=$((RETRIES - 1))
-  [[ $RETRIES -le 0 ]] && error "Ollama did not start in time. Check: docker logs ollama-intel"
+  [[ $RETRIES -le 0 ]] && error "Olama did not start in time. Check: docker logs olama"
   sleep 2
 done
 
-success "Ollama is running at http://localhost:${OLLAMA_PORT}"
+success "Olama is running at http://localhost:${OLLAMA_PORT}"
 echo ""
 echo "  Next steps:"
-echo "  • Download a model:  bash pull-model.sh llama3.2"
-echo "  • Or pull manually:  docker exec ollama-intel ollama pull llama3.2"
+echo "  • Download a model:  bash pull-model.sh            (mistral recommended)"
+echo "  • Or pull manually:  docker exec olama ollama pull mistral"
 echo "  • Chat in browser:   http://localhost:${OLLAMA_PORT}"
-echo "  • Stop:              docker stop ollama-intel"
-echo "  • Remove:            docker rm ollama-intel"
+echo "  • Stop:              docker stop olama"
+echo "  • Remove:            docker rm olama"
 echo ""
 echo "  Verify Intel GPU is in use after pulling a model:"
-echo "    docker exec ollama-intel ollama run llama3.2 'hello' 2>&1 | grep -i intel || true"
+echo "    docker exec olama clinfo | grep -i 'device name'"

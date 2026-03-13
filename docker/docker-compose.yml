@@ -7,8 +7,8 @@ services:
       dockerfile: Dockerfile
       args:
         OLLAMA_VERSION: ${OLLAMA_VERSION:-latest}
-    image: ollama-intel:${OLLAMA_VERSION:-latest}
-    container_name: ollama-intel
+    image: olama:${OLLAMA_VERSION:-latest}
+    container_name: olama
     restart: unless-stopped
 
     # Intel GPU device passthrough
@@ -29,14 +29,14 @@ services:
 
     volumes:
       # Persist downloaded models outside the container
-      - ollama_models:/root/.ollama
+      - olama_models:/root/.ollama
 
     # Resource limits (tune to your system)
     # mem_limit: 8g
     # cpus: "4"
 
 volumes:
-  ollama_models:
+  olama_models:
     driver: local
     # Optionally bind-mount a host directory instead:
     # driver_opts:

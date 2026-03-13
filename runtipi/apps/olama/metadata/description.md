@@ -1,21 +1,22 @@
-# Ollama — Intel GPU Edition
+# Olama — Intel GPU Edition
 
 Run large language models **locally** on your Intel GPU (Arc, Iris Xe, integrated graphics).
 
 ## Features
 
 - **Intel GPU acceleration** via Intel oneAPI OpenCL/SYCL runtime
-- **Minimal image** — no model bundled, download only what you need
+- **Minimal image** — no model bundled in the image, downloaded on first start
+- **Mistral auto-pulled by default** — well-rounded general model (~4.1 GB)
 - **OpenAI-compatible API** — works with Open WebUI, Enchanted, and other frontends
 - **Persistent model storage** — models survive container restarts and updates
 
 ## Getting Started
 
 1. Install the app from the Runtipi store
-2. (Optional) Enter a model name in the **"Model to auto-pull"** field to download it on first start
-3. If you skipped step 2, pull a model later via the **API** or the model pull helper
+2. **Mistral is pulled automatically** on first start (change or clear the field to use a different model)
+3. Once ready, chat via the API or pair with Open WebUI
 
-### Pull a model via API
+### Pull a different model via API
 
 ```bash
 curl http://<your-server>:11434/api/pull \
@@ -25,14 +26,14 @@ curl http://<your-server>:11434/api/pull \
 ### Pull via docker exec
 
 ```bash
-docker exec -it ollama-intel ollama pull llama3.2:1b
+docker exec -it olama ollama pull llama3.2:1b
 ```
 
 ### Chat via API
 
 ```bash
 curl http://<your-server>:11434/api/generate \
-  -d '{"model": "llama3.2:1b", "prompt": "Hello!", "stream": false}'
+  -d '{"model": "mistral", "prompt": "Hello!", "stream": false}'
 ```
 
 ## Recommended Models (smallest first)
@@ -40,10 +41,11 @@ curl http://<your-server>:11434/api/generate \
 | Model | Size | Best For |
 |---|---|---|
 | `llama3.2:1b` | ~770 MB | Quick tasks, low VRAM |
-| `phi3:mini` | ~2.3 GB | Balanced performance |
 | `llama3.2:3b` | ~2.0 GB | General purpose |
-| `mistral` | ~4.1 GB | High quality responses |
+| `phi3:mini` | ~2.3 GB | Balanced performance |
+| `mistral` | **~4.1 GB** | **Default — well-rounded general model** |
 | `codellama:7b` | ~3.8 GB | Code generation |
+| `llama3.1:8b` | ~4.7 GB | High quality |
 
 ## Intel GPU Notes
 
@@ -56,6 +58,6 @@ curl http://<your-server>:11434/api/generate \
 
 Install **Open WebUI** from the Runtipi store and point it at:
 ```
-http://ollama-intel:11434
+http://olama:11434
 ```
 (use the internal service name when both apps run on the same Runtipi instance)
