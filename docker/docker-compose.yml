@@ -65,6 +65,27 @@ services:
 
     environment:
       - OLLAMA_HOST=0.0.0.0:11434
+
+      # ── Concurrency / queue ──────────────────────────────────────────────
+      # NUM_PARALLEL=1 keeps one request running at a time on the GPU so VRAM
+      # is never split across simultaneous inference passes.  All other requests
+      # from any app (Open WebUI, Cursor, scripts, etc.) wait in the queue.
+      # Raise to 2-4 only if your GPU has spare VRAM and you want interleaving.
+      - OLLAMA_NUM_PARALLEL=${OLLAMA_NUM_PARALLEL:-1}
+
+      # How many requests can wait before Ollama starts returning 503.
+      # 100 is plenty for personal/team use; raise if you have many clients.
+      - OLLAMA_MAX_QUEUE=${OLLAMA_MAX_QUEUE:-100}
+
+      # Keep only one model loaded in VRAM at a time (default on GPU anyway).
+      # Set to 2+ only if you have headroom and switch models frequently.
+      - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_LOADED_MODELS:-1}
+
+      # Unload the model after this idle period to free VRAM.
+      # 5m is the Ollama default.  Set to 0 to keep loaded forever.
+      # Set to -1 to unload immediately after each request (max VRAM savings).
+      - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:-5m}
+
       # Debug: set OLLAMA_DEBUG=1 in docker/.env (or run: bash scripts/logs.sh debug-on)
       # Enables verbose GPU selection, model load steps, and token generation traces.
       - OLLAMA_DEBUG=${OLLAMA_DEBUG:-0}
