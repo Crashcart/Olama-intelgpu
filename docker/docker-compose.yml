@@ -162,6 +162,11 @@ services:
       # ── LLM engine ───────────────────────────────────────────────────────
       - OLLAMA_BASE_URL=http://olama:11434
 
+      # ── Default model ───────────────────────────────────────────────────
+      # Pre-select a model for new chats. Leave empty to let users pick.
+      # Must match a model already pulled in Ollama (e.g. mistral, llama3.2:3b).
+      - DEFAULT_MODELS=${DEFAULT_MODELS:-}
+
       # ── Pipelines — tools, functions, code execution, custom filters ─────
       # Connects to the pipelines container as an OpenAI-compatible endpoint.
       # Drop any .py pipeline file into ${DATA_DIR}/pipelines to add new tools.
@@ -186,6 +191,11 @@ services:
       - ENABLE_RAG_WEB_SEARCH=true
       - RAG_WEB_SEARCH_ENGINE=searxng
       - SEARXNG_QUERY_URL=http://searxng:8080/search?q=<query>&format=json
+
+      # ── YouTube transcript loading ─────────────────────────────────────
+      # Paste a YouTube URL into a chat to load its transcript as RAG context.
+      # The model can then answer questions about the video content.
+      - YOUTUBE_LOADER_LANGUAGE=${YOUTUBE_LOADER_LANGUAGE:-en}
 
       # ── Audio — Speech-to-Text (microphone → text) ────────────────────────
       # Uses faster-whisper running inside the Open WebUI container — no extra
@@ -213,9 +223,18 @@ services:
       # Or run: bash scripts/logs.sh debug-on
       - LOG_LEVEL=${WEBUI_LOG_LEVEL:-INFO}
 
-      # ── Auth ──────────────────────────────────────────────────────────────
-      # Set to "true" to enable login-protected accounts (multi-user).
-      - WEBUI_AUTH=false
+      # ── Community sharing ──────────────────────────────────────────────
+      # Allow users to share their custom prompts to the Open WebUI community hub.
+      - ENABLE_COMMUNITY_SHARING=${ENABLE_COMMUNITY_SHARING:-false}
+
+      # ── Auth / user management ──────────────────────────────────────────
+      # WEBUI_AUTH=true enables login-protected multi-user accounts.
+      # ENABLE_SIGNUP controls whether new users can register themselves.
+      # WEBUI_SECRET_KEY is the JWT signing secret — auto-generated if empty,
+      # but set it explicitly so sessions survive container restarts.
+      - WEBUI_AUTH=${WEBUI_AUTH:-false}
+      - ENABLE_SIGNUP=${ENABLE_SIGNUP:-true}
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-}
 
     volumes:
       # ── Chat history, RAG docs, embeddings, settings (exportable) ─────────
@@ -352,4 +371,4 @@ networks:
   olama_net:
     driver: bridge
     labels:
-      com.olama.description: "Internal network — olama, open-webui, searxng"
+      com.olama.description: "Internal network — olama, open-webui, searxng, pipelines"

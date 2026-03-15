@@ -1,0 +1,113 @@
+{
+  "$schema": "../schema.json",
+  "name": "Olama — Intel GPU LLM Stack",
+  "id": "olama-intel-gpu",
+  "available": true,
+  "short_desc": "Ollama LLM stack for Intel GPUs — Chat UI, web search, voice, RAG, pipelines",
+  "author": "Crashcart",
+  "port": 3000,
+  "categories": ["ai"],
+  "description": "",
+  "tipiVersion": 2,
+  "version": "latest",
+  "no_gui": false,
+  "exposable": true,
+  "url_suffix": "/",
+  "source": "https://github.com/Crashcart/Olama-intelgpu",
+  "website": "https://github.com/Crashcart/Olama-intelgpu",
+  "supported_architectures": ["amd64"],
+  "form_fields": [
+    {
+      "type": "text",
+      "label": "Model to pull on first start",
+      "hint": "Leave empty to pull manually later. Options: mistral, llama3.2:3b, phi3:mini, codellama:7b, llama3.1:8b",
+      "env_variable": "OLLAMA_PULL_MODEL",
+      "default": "mistral",
+      "required": false
+    },
+    {
+      "type": "text",
+      "label": "Default model for new chats",
+      "hint": "Pre-selects this model in new conversations. Must match a pulled model name. Leave empty to let users pick.",
+      "env_variable": "DEFAULT_MODELS",
+      "default": "",
+      "required": false
+    },
+    {
+      "type": "number",
+      "label": "Parallel requests on GPU",
+      "hint": "Keep at 1 for Intel GPU to avoid VRAM fragmentation. Raise only if GPU has spare headroom.",
+      "env_variable": "OLLAMA_NUM_PARALLEL",
+      "default": 1,
+      "min": 1,
+      "max": 16,
+      "required": false
+    },
+    {
+      "type": "number",
+      "label": "Max queued requests",
+      "hint": "How many requests can wait before Ollama rejects new ones with 503.",
+      "env_variable": "OLLAMA_MAX_QUEUE",
+      "default": 100,
+      "min": 1,
+      "max": 10000,
+      "required": false
+    },
+    {
+      "type": "text",
+      "label": "Model keep-alive time",
+      "hint": "How long to keep a model loaded in VRAM after its last request (e.g. 5m, 30m, 0 for immediate unload, -1 for forever).",
+      "env_variable": "OLLAMA_KEEP_ALIVE",
+      "default": "5m",
+      "required": false
+    },
+    {
+      "type": "text",
+      "label": "Whisper STT model",
+      "hint": "Speech-to-text quality/speed tradeoff: tiny | base | small | medium | large-v3",
+      "env_variable": "WHISPER_MODEL",
+      "default": "base",
+      "required": false
+    },
+    {
+      "type": "password",
+      "label": "Pipelines API key",
+      "hint": "Shared secret between Open WebUI and the Pipelines container. Change this before exposing to a network.",
+      "env_variable": "PIPELINES_API_KEY",
+      "default": "0p3n-w3bu!",
+      "required": true
+    },
+    {
+      "type": "boolean",
+      "label": "Enable authentication",
+      "hint": "When enabled, users must log in. The first user to register becomes admin.",
+      "env_variable": "WEBUI_AUTH",
+      "default": false,
+      "required": false
+    },
+    {
+      "type": "boolean",
+      "label": "Allow new user signup",
+      "hint": "When authentication is enabled, controls whether new users can self-register.",
+      "env_variable": "ENABLE_SIGNUP",
+      "default": true,
+      "required": false
+    },
+    {
+      "type": "password",
+      "label": "JWT secret key",
+      "hint": "Session signing key — set explicitly so user sessions survive container restarts. Leave empty for auto-generated.",
+      "env_variable": "WEBUI_SECRET_KEY",
+      "default": "",
+      "required": false
+    },
+    {
+      "type": "boolean",
+      "label": "Enable image generation",
+      "hint": "Requires an AUTOMATIC1111 or ComfyUI service running on the same network. Off by default.",
+      "env_variable": "ENABLE_IMAGE_GENERATION",
+      "default": false,
+      "required": false
+    }
+  ]
+}

@@ -1,0 +1,172 @@
+version: "3.9"
+
+# =============================================================================
+# Olama — Intel GPU LLM Stack (Runtipi edition)
+#
+# This compose file is adapted for Runtipi's app store conventions:
+#   - ${APP_PORT} is the host port set during app install
+#   - ${APP_DATA_DIR} is Runtipi's managed data directory for this app
+#   - Form fields from config.json are injected as environment variables
+#
+# IMPORTANT: The olama container requires a pre-built Intel GPU image.
+# Build and push it before installing this app in Runtipi:
+#   cd docker/ && docker build -t ghcr.io/crashcart/olama-intel-gpu:latest .
+#   docker push ghcr.io/crashcart/olama-intel-gpu:latest
+# =============================================================================
+
+services:
+
+  olama-intel-gpu:
+    image: ghcr.io/crashcart/olama-intel-gpu:latest
+    container_name: olama-intel-gpu
+    restart: unless-stopped
+
+    # Intel GPU device passthrough (Arc / Iris Xe / integrated)
+    devices:
+      - /dev/dri:/dev/dri
+    group_add:
+      - video
+      - render
+
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
+      - OLLAMA_NUM_PARALLEL=${OLLAMA_NUM_PARALLEL:-1}
+      - OLLAMA_MAX_QUEUE=${OLLAMA_MAX_QUEUE:-100}
+      - OLLAMA_MAX_LOADED_MODELS=1
+      - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:-5m}
+
+    ports:
+      - "11434:11434"
+
+    volumes:
+      - ${APP_DATA_DIR}/data/models:/root/.ollama
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:11434/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+    networks:
+      - tipi_main_network
+
+  olama-intel-gpu-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: olama-intel-gpu-webui
+    restart: unless-stopped
+    depends_on:
+      olama-intel-gpu:
+        condition: service_healthy
+      olama-intel-gpu-searxng:
+        condition: service_healthy
+      olama-intel-gpu-pipelines:
+        condition: service_healthy
+
+    ports:
+      - "${APP_PORT}:8080"
+
+    environment:
+      # LLM engine
+      - OLLAMA_BASE_URL=http://olama-intel-gpu:11434
+      - DEFAULT_MODELS=${DEFAULT_MODELS:-}
+
+      # Pipelines
+      - ENABLE_OPENAI_API=true
+      - OPENAI_API_BASE_URLS=http://olama-intel-gpu-pipelines:9099
+      - OPENAI_API_KEYS=${PIPELINES_API_KEY:-0p3n-w3bu!}
+
+      # RAG — document Q&A
+      - ENABLE_RAG_LOCAL_WEB_FETCH=true
+      - PDF_EXTRACT_IMAGES=true
+      - CHUNK_SIZE=1500
+      - CHUNK_OVERLAP=100
+
+      # Web search
+      - ENABLE_RAG_WEB_SEARCH=true
+      - RAG_WEB_SEARCH_ENGINE=searxng
+      - SEARXNG_QUERY_URL=http://olama-intel-gpu-searxng:8080/search?q=<query>&format=json
+
+      # YouTube transcripts
+      - YOUTUBE_LOADER_LANGUAGE=en
+
+      # Audio — speech-to-text
+      - AUDIO_STT_ENGINE=${AUDIO_STT_ENGINE:-whisper}
+      - WHISPER_MODEL=${WHISPER_MODEL:-base}
+      - AUDIO_TTS_ENGINE=
+
+      # Image generation (disabled by default)
+      - ENABLE_IMAGE_GENERATION=${ENABLE_IMAGE_GENERATION:-false}
+      - IMAGE_GENERATION_ENGINE=automatic1111
+      - AUTOMATIC1111_BASE_URL=http://automatic1111:7860
+
+      # Community sharing
+      - ENABLE_COMMUNITY_SHARING=false
+
+      # Auth
+      - WEBUI_AUTH=${WEBUI_AUTH:-false}
+      - ENABLE_SIGNUP=${ENABLE_SIGNUP:-true}
+      - WEBUI_SECRET_KEY=${WEBUI_SECRET_KEY:-}
+
+      # Logging
+      - LOG_LEVEL=INFO
+
+    volumes:
+      - ${APP_DATA_DIR}/data/webui:/app/backend/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/ || wget -qO/dev/null http://localhost:8080/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+    networks:
+      - tipi_main_network
+
+  olama-intel-gpu-searxng:
+    image: searxng/searxng:latest
+    container_name: olama-intel-gpu-searxng
+    restart: unless-stopped
+
+    environment:
+      - SEARXNG_BASE_URL=http://olama-intel-gpu-searxng:8080
+      - SEARXNG_DEBUG=false
+
+    volumes:
+      - ${APP_DATA_DIR}/data/searxng:/etc/searxng
+
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO/dev/null http://localhost:8080/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+    networks:
+      - tipi_main_network
+
+  olama-intel-gpu-pipelines:
+    image: ghcr.io/open-webui/pipelines:main
+    container_name: olama-intel-gpu-pipelines
+    restart: unless-stopped
+
+    environment:
+      - PIPELINES_API_KEY=${PIPELINES_API_KEY:-0p3n-w3bu!}
+
+    volumes:
+      - ${APP_DATA_DIR}/data/pipelines:/app/pipelines
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9099/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+    networks:
+      - tipi_main_network
+
+networks:
+  tipi_main_network:
+    external: true
