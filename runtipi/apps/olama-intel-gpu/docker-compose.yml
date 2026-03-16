@@ -32,11 +32,12 @@ services:
       - OLLAMA_HOST=0.0.0.0:11434
       - OLLAMA_NUM_PARALLEL=${OLLAMA_NUM_PARALLEL:-1}
       - OLLAMA_MAX_QUEUE=${OLLAMA_MAX_QUEUE:-100}
-      - OLLAMA_MAX_LOADED_MODELS=1
+      - OLLAMA_MAX_LOADED_MODELS=${OLLAMA_MAX_LOADED_MODELS:-1}
       - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:-5m}
 
+    # OLLAMA_API_PORT lets you change the host-side port if 11434 is already in use.
     ports:
-      - "11434:11434"
+      - "${OLLAMA_API_PORT:-11434}:11434"
 
     volumes:
       - ${APP_DATA_DIR}/data/models:/root/.ollama
@@ -134,6 +135,9 @@ services:
       - SEARXNG_DEBUG=false
 
     volumes:
+      # settings.yml must exist at APP_DATA_DIR/data/searxng/settings.yml before
+      # first start — the Runtipi app README explains how to place it.
+      # Without it SearXNG crashes and open-webui will not start (healthcheck blocks it).
       - ${APP_DATA_DIR}/data/searxng:/etc/searxng
 
     healthcheck:

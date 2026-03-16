@@ -5,15 +5,18 @@
 # Usage (from a local clone):
 #   bash scripts/install.sh [OPTIONS]
 #
-# Usage (one-liner curl pipe — requires the repo to be public on main):
+# Usage (one-liner curl pipe — repo must be public):
 #   bash <(curl -fsSL https://raw.githubusercontent.com/Crashcart/Olama-intelgpu/main/scripts/install.sh) [OPTIONS]
+#
+#   If main branch is not yet available (e.g. PR not merged), target the branch:
+#   bash <(curl -fsSL https://raw.githubusercontent.com/Crashcart/Olama-intelgpu/<branch>/scripts/install.sh) --branch <branch>
 #
 # Options:
 #   --data-dir  DIR   Where to store models, chat history, config (default: /opt/olama)
 #   --port      PORT  Host port for the Ollama API              (default: 11434)
 #   --webui-port PORT Host port for the Open WebUI chat UI      (default: 3000)
 #   --version   TAG   Ollama version tag                        (default: latest)
-#   --branch    NAME  Git branch to clone when running via curl (default: main)
+#   --branch    NAME  Git branch to clone when running via curl (auto-detected if omitted)
 # =============================================================================
 
 set -euo pipefail
@@ -24,7 +27,8 @@ OLLAMA_PORT="${OLLAMA_PORT:-11434}"
 WEBUI_PORT="${WEBUI_PORT:-3000}"
 OLLAMA_VERSION="${OLLAMA_VERSION:-latest}"
 REPO_GIT="https://github.com/Crashcart/Olama-intelgpu"
-REPO_BRANCH="${REPO_BRANCH:-main}"
+# Branch is auto-detected below; override with --branch or the REPO_BRANCH env var.
+REPO_BRANCH="${REPO_BRANCH:-}"
 COMPOSE_PROJECT="olama"
 
 # ── Color helpers ──────────────────────────────────────────────────────────────
@@ -96,11 +100,26 @@ else
   # Running via curl pipe — clone the repo
   command -v git &>/dev/null \
     || error "git is required for the curl-pipe install. Install git and retry."
+
+  # Auto-detect branch if not explicitly set: try main, then master.
+  if [[ -z "$REPO_BRANCH" ]]; then
+    info "Auto-detecting default branch..."
+    for _try in main master; do
+      if git ls-remote --exit-code --heads "$REPO_GIT" "$_try" &>/dev/null 2>&1; then
+        REPO_BRANCH="$_try"
+        break
+      fi
+    done
+    if [[ -z "$REPO_BRANCH" ]]; then
+      error "Could not find branch 'main' or 'master' in ${REPO_GIT}.\nUse --branch NAME to specify the branch explicitly."
+    fi
+  fi
+
   info "Cloning ${REPO_GIT} (branch: ${REPO_BRANCH})..."
   CLONE_TEMPDIR="$(mktemp -d)"
   trap 'rm -rf "$CLONE_TEMPDIR"' EXIT
   git clone --depth=1 --branch "$REPO_BRANCH" "$REPO_GIT" "$CLONE_TEMPDIR" \
-    || error "Clone failed. Is the repo public and branch '${REPO_BRANCH}' correct?"
+    || error "Clone failed. Check that the repo is public and branch '${REPO_BRANCH}' exists."
   REPO_ROOT="$CLONE_TEMPDIR"
   info "Cloned to ${REPO_ROOT}"
 fi

@@ -18,11 +18,13 @@
   "supported_architectures": ["amd64"],
   "form_fields": [
     {
-      "type": "text",
-      "label": "Model to pull on first start",
-      "hint": "Leave empty to pull manually later. Options: mistral, llama3.2:3b, phi3:mini, codellama:7b, llama3.1:8b",
-      "env_variable": "OLLAMA_PULL_MODEL",
-      "default": "mistral",
+      "type": "number",
+      "label": "Ollama API port",
+      "hint": "Host port for the raw Ollama API (used by external apps like Cursor or VS Code). Change if 11434 is already in use.",
+      "env_variable": "OLLAMA_API_PORT",
+      "default": 11434,
+      "min": 1024,
+      "max": 65535,
       "required": false
     },
     {

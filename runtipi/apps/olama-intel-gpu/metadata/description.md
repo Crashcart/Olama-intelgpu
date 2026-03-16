@@ -54,6 +54,19 @@ docker push ghcr.io/crashcart/olama-intel-gpu:latest
 
 Or use the pre-built image from the Crashcart GitHub Container Registry if available.
 
+### First-time setup — SearXNG config
+
+SearXNG requires a `settings.yml` before it will start. Copy it from the repo **before** clicking Install in Runtipi:
+
+```bash
+# Replace <APP_DATA_DIR> with the path Runtipi shows for this app's data
+mkdir -p <APP_DATA_DIR>/data/searxng
+curl -fsSL https://raw.githubusercontent.com/Crashcart/Olama-intelgpu/main/docker/searxng/settings.yml \
+  -o <APP_DATA_DIR>/data/searxng/settings.yml
+```
+
+Without this file, SearXNG will crash and Open WebUI will not start (it waits for SearXNG to become healthy before launching).
+
 ### Data storage
 
 All data is stored under Runtipi's app data directory:

@@ -287,9 +287,14 @@ services:
       - SEARXNG_DEBUG=${SEARXNG_DEBUG:-false}
 
     volumes:
-      # ── Search config (exportable) ────────────────────────────────────────
-      # Copy docker/searxng/settings.yml here on first run (see README).
+      # ── Search config ─────────────────────────────────────────────────────
+      # The data dir holds SearXNG's writable runtime state (limiter.toml,
+      # favicon cache, etc.).  The settings.yml is bind-mounted directly from
+      # the repo so it is always present — even on a completely fresh DATA_DIR —
+      # and SearXNG will never fail to start with a missing config error.
+      # To customise search engines, edit docker/searxng/settings.yml.
       - ${DATA_DIR:-/opt/olama}/searxng:/etc/searxng
+      - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
 
     # SearXNG runs on Alpine (busybox wget, no curl by default).
     healthcheck:
