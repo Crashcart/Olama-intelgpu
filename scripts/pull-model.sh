@@ -68,8 +68,10 @@ info "This may take several minutes depending on model size and connection speed
 echo ""
 
 # Pull via docker exec (streams progress to terminal)
+# Use -t only when a TTY is available; piped/SSH sessions have no TTY
 if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^${CONTAINER_NAME}$"; then
-  docker exec -it "${CONTAINER_NAME}" ollama pull "${MODEL}"
+  TTY_FLAG=; [ -t 0 ] && TTY_FLAG=t
+  docker exec -i${TTY_FLAG} "${CONTAINER_NAME}" ollama pull "${MODEL}"
 else
   # Fallback: use REST API directly (no docker exec needed)
   warn "Container '${CONTAINER_NAME}' not found, falling back to API pull..."
