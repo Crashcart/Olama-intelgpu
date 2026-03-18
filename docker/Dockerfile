@@ -2,7 +2,7 @@
 # Supports Intel Arc, Intel Iris Xe, and Intel integrated graphics via oneAPI/SYCL
 # Models are downloaded at runtime via pull-model.sh or the Ollama API
 
-FROM ubuntu:22.04 AS base
+FROM ubuntu:22.04
 
 ARG OLLAMA_VERSION=latest
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -25,21 +25,29 @@ RUN wget -qO- https://repositories.intel.com/gpu/intel-graphics.key \
     | tee /etc/apt/sources.list.d/intel-gpu-jammy.list
 
 # Install Intel GPU compute runtime (OpenCL + Level Zero)
+# intel-opencl-icd  — OpenCL ICD for all Intel GPU generations
+# libze1            — Level Zero loader (Arc / Xe / 10th-gen+ iGPU)
+# libze-intel-gpu1  — Level Zero GPU driver
+# intel-ocloc       — OpenCL offline compiler; required for Gen 9-12 iGPU and Arc
+#                     (without it, kernels are JIT-compiled per-run which can hang
+#                      or fail on first inference for these GPU generations)
+# clinfo            — diagnostic: lists detected OpenCL/Level Zero devices
 RUN apt-get update && apt-get install -y --no-install-recommends \
     intel-opencl-icd \
-    libze-intel-gpu1 \
     libze1 \
+    libze-intel-gpu1 \
+    intel-ocloc \
     clinfo \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Ollama from GitHub releases (ollama.com/install.sh uses a broken CDN URL)
-RUN VER="${OLLAMA_VERSION}"; \
-    if [ "${VER}" = "latest" ]; then \
-      VER=$(curl -fsSL https://api.github.com/repos/ollama/ollama/releases/latest \
-            | grep '"tag_name"' | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/'); \
+# Install Ollama from GitHub releases (use /latest/download/ redirect, no API call needed)
+RUN if [ "${OLLAMA_VERSION}" = "latest" ]; then \
+      curl -fsSL "https://github.com/ollama/ollama/releases/latest/download/ollama-linux-amd64.tgz" \
+           -o /tmp/ollama.tgz; \
+    else \
+      curl -fsSL "https://github.com/ollama/ollama/releases/download/${OLLAMA_VERSION}/ollama-linux-amd64.tgz" \
+           -o /tmp/ollama.tgz; \
     fi \
-    && curl -fsSL "https://github.com/ollama/ollama/releases/download/${VER}/ollama-linux-amd64.tgz" \
-       -o /tmp/ollama.tgz \
     && tar -C /usr/local -xzf /tmp/ollama.tgz \
     && rm /tmp/ollama.tgz
 
