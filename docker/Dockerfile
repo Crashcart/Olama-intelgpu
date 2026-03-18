@@ -32,12 +32,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     clinfo \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Ollama (picks up Intel GPU via OpenCL/SYCL at runtime)
-RUN if [ "${OLLAMA_VERSION}" = "latest" ]; then \
-      curl -fsSL https://ollama.com/install.sh | sh; \
-    else \
-      curl -fsSL https://ollama.com/install.sh | OLLAMA_VERSION="${OLLAMA_VERSION}" sh; \
-    fi
+# Install Ollama from GitHub releases (ollama.com/install.sh uses a broken CDN URL)
+RUN VER="${OLLAMA_VERSION}"; \
+    if [ "${VER}" = "latest" ]; then \
+      VER=$(curl -fsSL https://api.github.com/repos/ollama/ollama/releases/latest \
+            | grep '"tag_name"' | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/'); \
+    fi \
+    && curl -fsSL "https://github.com/ollama/ollama/releases/download/${VER}/ollama-linux-amd64.tgz" \
+       -o /tmp/ollama.tgz \
+    && tar -C /usr/local -xzf /tmp/ollama.tgz \
+    && rm /tmp/ollama.tgz
 
 # Create model directory (empty - models pulled at runtime)
 RUN mkdir -p /root/.ollama/models
