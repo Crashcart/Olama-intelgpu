@@ -104,6 +104,21 @@ if ! ls /dev/dri/renderD* &>/dev/null; then
   warn "The stack will still run, falling back to CPU inference."
 fi
 
+# Detect host GIDs for Intel GPU device access.
+# Docker's group_add uses these as numbers so it never needs to look up group
+# names in the container's /etc/group (the 'render' group is not present in
+# the Ubuntu 22.04 base image by default, causing "no matching entries" errors).
+VIDEO_GID=$(getent group video  2>/dev/null | cut -d: -f3 || true)
+RENDER_GID=$(getent group render 2>/dev/null | cut -d: -f3 || true)
+# Fall back to the GID of the first renderD device node if the named group
+# doesn't exist yet (e.g. GPU drivers not yet installed on the host).
+if [[ -z "$RENDER_GID" ]] && ls /dev/dri/renderD* &>/dev/null; then
+  RENDER_GID=$(stat -c %g /dev/dri/renderD* 2>/dev/null | head -1 || true)
+fi
+VIDEO_GID="${VIDEO_GID:-44}"
+RENDER_GID="${RENDER_GID:-993}"
+info "GPU group IDs: video=${VIDEO_GID}  render=${RENDER_GID}"
+
 # ── Sudo keepalive ────────────────────────────────────────────────────────────
 # Prompt for sudo once now, before any background phase, so the script never
 # stalls mid-run waiting for a password (e.g. when creating ${DATA_DIR}).
@@ -214,6 +229,8 @@ if [[ ! -f "$ENV_FILE" ]]; then
     -e "s|^OLLAMA_PORT=.*|OLLAMA_PORT=${OLLAMA_PORT}|" \
     -e "s|^WEBUI_PORT=.*|WEBUI_PORT=${WEBUI_PORT}|" \
     -e "s|^OLLAMA_VERSION=.*|OLLAMA_VERSION=${OLLAMA_VERSION}|" \
+    -e "s|^VIDEO_GID=.*|VIDEO_GID=${VIDEO_GID}|" \
+    -e "s|^RENDER_GID=.*|RENDER_GID=${RENDER_GID}|" \
     "$ENV_FILE" && rm -f "${ENV_FILE}.bak"
   success ".env written to ${ENV_FILE}"
   info "Review and adjust ${ENV_FILE} at any time — then run: docker compose up -d"
