@@ -63,9 +63,13 @@ services:
     # Intel GPU device passthrough (Arc / Iris Xe / integrated Intel graphics)
     devices:
       - /dev/dri:/dev/dri
+    # Numeric GIDs — bypasses Docker's name-lookup against the container's
+    # /etc/group, which fails when the 'render' group was never added to the
+    # Ubuntu 22.04 base image.  install.sh detects both GIDs from the host and
+    # writes them to docker/.env; defaults cover the typical Ubuntu values.
     group_add:
-      - video
-      - render
+      - "${VIDEO_GID:-44}"
+      - "${RENDER_GID:-993}"
 
     environment:
       - OLLAMA_HOST=0.0.0.0:11434
