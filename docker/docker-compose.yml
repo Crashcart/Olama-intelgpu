@@ -136,6 +136,7 @@ services:
 
   open-webui:
     image: ghcr.io/open-webui/open-webui:main
+    platform: linux/amd64
     container_name: open-webui
     restart: unless-stopped
     # Wait for all backends to pass their health checks before starting.
@@ -269,6 +270,7 @@ services:
 
   searxng:
     image: searxng/searxng:latest
+    platform: linux/amd64
     container_name: searxng
     restart: unless-stopped
 
@@ -328,6 +330,7 @@ services:
 
   pipelines:
     image: ghcr.io/open-webui/pipelines:main
+    platform: linux/amd64
     container_name: pipelines
     restart: unless-stopped
 
@@ -378,6 +381,7 @@ services:
 
   dozzle:
     image: amir20/dozzle:latest
+    platform: linux/amd64
     container_name: olama-dozzle
     restart: unless-stopped
 
