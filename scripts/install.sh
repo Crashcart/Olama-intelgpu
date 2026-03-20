@@ -218,26 +218,42 @@ if [[ ! -f "${DATA_DIR}/searxng/settings.yml" ]] \
 fi
 
 # ── Write docker/.env ─────────────────────────────────────────────────────────
+# _stamp_env applies (or updates) a set of key=value lines in the .env file.
+# It replaces existing keys in-place and appends any key that is missing.
+# User-customised values for keys not in this list are always preserved.
+_stamp_env() {
+  local file="$1"; shift
+  while [[ $# -ge 2 ]]; do
+    local key="$1" val="$2"; shift 2
+    if grep -q "^${key}=" "$file" 2>/dev/null; then
+      sed -i.bak "s|^${key}=.*|${key}=${val}|" "$file" && rm -f "${file}.bak"
+    else
+      echo "${key}=${val}" >> "$file"
+    fi
+  done
+}
+
 ENV_FILE="${DOCKER_DIR}/.env"
+sep
 if [[ ! -f "$ENV_FILE" ]]; then
-  sep
   info "Creating ${ENV_FILE} from .env.example..."
   cp "${REPO_ROOT}/.env.example" "$ENV_FILE"
-  # Stamp in user-provided values
-  sed -i.bak \
-    -e "s|^DATA_DIR=.*|DATA_DIR=${DATA_DIR}|" \
-    -e "s|^OLLAMA_PORT=.*|OLLAMA_PORT=${OLLAMA_PORT}|" \
-    -e "s|^WEBUI_PORT=.*|WEBUI_PORT=${WEBUI_PORT}|" \
-    -e "s|^OLLAMA_VERSION=.*|OLLAMA_VERSION=${OLLAMA_VERSION}|" \
-    -e "s|^VIDEO_GID=.*|VIDEO_GID=${VIDEO_GID}|" \
-    -e "s|^RENDER_GID=.*|RENDER_GID=${RENDER_GID}|" \
-    "$ENV_FILE" && rm -f "${ENV_FILE}.bak"
-  success ".env written to ${ENV_FILE}"
-  info "Review and adjust ${ENV_FILE} at any time — then run: docker compose up -d"
+  success ".env created at ${ENV_FILE}"
 else
-  warn ".env already exists at ${ENV_FILE} — not overwriting."
-  warn "To reset: rm ${ENV_FILE} && bash ${INSTALL_DIR}/scripts/install.sh"
+  info "Updating ${ENV_FILE} with current settings..."
 fi
+# Always stamp install-time values so re-runs and upgrades stay consistent.
+# Everything else in the file (API keys, model names, feature flags, etc.) is left untouched.
+_stamp_env "$ENV_FILE" \
+  DATA_DIR        "${DATA_DIR}" \
+  OLLAMA_PORT     "${OLLAMA_PORT}" \
+  WEBUI_PORT      "${WEBUI_PORT}" \
+  DOZZLE_PORT     "${DOZZLE_PORT}" \
+  OLLAMA_VERSION  "${OLLAMA_VERSION}" \
+  VIDEO_GID       "${VIDEO_GID}" \
+  RENDER_GID      "${RENDER_GID}"
+success ".env ready at ${ENV_FILE}"
+info "Review and adjust ${ENV_FILE} at any time — then run: docker compose up -d"
 
 # ── Build Intel GPU image ──────────────────────────────────────────────────────
 # COMPOSE_ANSI=never + --progress plain suppress ANSI spinners/color codes so
