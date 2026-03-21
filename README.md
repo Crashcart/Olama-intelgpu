@@ -70,8 +70,8 @@ The installer will:
 5. Write `docker/.env` (or update it if one already exists from a previous run)
 6. Open the three host-facing ports in ufw or firewalld so other devices on your network can connect
 7. Build the Ollama Intel GPU image (~5 min on first run — pulls Ollama from Docker Hub and installs Intel oneAPI drivers)
-8. Pull the `open-webui`, `searxng`, `pipelines`, and `dozzle` images
-9. Start all 5 containers and wait until Ollama and Open WebUI are ready
+8. Start all 5 containers — public images (`open-webui`, `searxng`, `pipelines`, `dozzle`) are downloaded automatically on first run only; existing containers from a previous install are reused as-is
+9. Wait until Ollama and Open WebUI are ready
 
 The installer is **idempotent** — safe to re-run after an upgrade or if a previous run failed. It updates ports, GPU group IDs, and other install-time values in an existing `.env` without touching your customised settings (API keys, model names, feature flags, etc.).
 
