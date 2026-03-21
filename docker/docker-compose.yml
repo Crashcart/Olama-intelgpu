@@ -405,6 +405,11 @@ services:
     platform: linux/amd64
     container_name: olama-dozzle
     restart: unless-stopped
+    # Dozzle streams live logs from the Docker socket; it needs extra time to
+    # close those streams cleanly on shutdown.  Without this, Docker sends
+    # SIGKILL after the default 10 s and Dozzle logs "context deadline exceeded
+    # — failed to shut down".  30 s gives it enough time to drain gracefully.
+    stop_grace_period: 30s
 
     labels:
       com.olama.category: "logs"
