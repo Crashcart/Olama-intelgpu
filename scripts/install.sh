@@ -307,7 +307,7 @@ info "Review and adjust ${ENV_FILE} at any time — then run: docker compose up 
 # ── Open firewall ports for LAN access ───────────────────────────────────────
 # Docker binds to 0.0.0.0 (all interfaces) so remote machines can reach the
 # ports at the network level — but most Linux distros block them by default
-# with ufw or firewalld.  Open just the three host-facing ports so other
+# with ufw or firewalld.  Open just the four host-facing ports so other
 # devices on the same network can connect.
 sep
 info "Checking host firewall for LAN access..."

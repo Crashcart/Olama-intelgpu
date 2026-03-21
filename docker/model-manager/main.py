@@ -21,8 +21,8 @@ from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(title="Olama Model Manager", docs_url=None, redoc_url=None)
 
-OLLAMA_URL = os.environ.get("OLLAMA_BASE_URL", "http://olama:11434").rstrip("/")
-WEBUI_URL  = os.environ.get("WEBUI_URL", "http://localhost:45213")
+OLLAMA_URL  = os.environ.get("OLLAMA_BASE_URL", "http://olama:11434").rstrip("/")
+WEBUI_PORT  = os.environ.get("WEBUI_PORT", "45213")
 
 # ---------------------------------------------------------------------------
 # Model catalog — curated list of popular Ollama models
@@ -171,7 +171,7 @@ CATALOG = [
 
 @app.get("/api/config")
 async def get_config():
-    return {"webui_url": WEBUI_URL}
+    return {"webui_port": WEBUI_PORT}
 
 
 @app.get("/api/catalog")

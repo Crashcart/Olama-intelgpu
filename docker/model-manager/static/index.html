@@ -307,7 +307,10 @@ async function init() {
     fetchCatalog(),
     fetchLocal(),
   ]);
-  if (cfg.webui_url) document.getElementById('webui-link').href = cfg.webui_url;
+  if (cfg.webui_port) {
+    const { protocol, hostname } = window.location;
+    document.getElementById('webui-link').href = `${protocol}//${hostname}:${cfg.webui_port}`;
+  }
   renderGrid();
 }
 
