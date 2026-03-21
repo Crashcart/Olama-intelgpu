@@ -21,8 +21,8 @@ from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(title="Olama Model Manager", docs_url=None, redoc_url=None)
 
-OLLAMA_URL = os.environ.get("OLLAMA_BASE_URL", "http://olama:11434").rstrip("/")
-WEBUI_URL  = os.environ.get("WEBUI_URL", "http://localhost:45213")
+OLLAMA_URL  = os.environ.get("OLLAMA_BASE_URL", "http://olama:11434").rstrip("/")
+WEBUI_PORT  = os.environ.get("WEBUI_PORT", "45213")
 
 # ---------------------------------------------------------------------------
 # Model catalog — curated list of popular Ollama models
@@ -171,7 +171,7 @@ CATALOG = [
 
 @app.get("/api/config")
 async def get_config():
-    return {"webui_url": WEBUI_URL}
+    return {"webui_port": WEBUI_PORT}
 
 
 @app.get("/api/catalog")
@@ -214,6 +214,24 @@ async def pull_model(model: str):
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@app.get("/api/search")
+async def search_registry(q: str = "", p: int = 1):
+    """Proxy search to the Ollama model registry at ollama.com."""
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.get(
+                "https://ollama.com/api/models",
+                params={"q": q, "p": p, "sort": "popular"},
+                headers={"Accept": "application/json"},
+            )
+            resp.raise_for_status()
+            return resp.json()
+    except httpx.TimeoutException:
+        raise HTTPException(status_code=504, detail="ollama.com search timed out")
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"Registry search unavailable: {exc}")
 
 
 @app.delete("/api/model/{model:path}")
