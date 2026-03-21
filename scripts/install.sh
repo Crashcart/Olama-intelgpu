@@ -371,7 +371,7 @@ done
 # ── Start the full stack ───────────────────────────────────────────────────────
 sep
 info "Starting Olama stack (5 containers)..."
-$COMPOSE_CMD up -d
+$COMPOSE_CMD up -d --no-recreate
 echo
 
 # ── Wait for Ollama to become ready ───────────────────────────────────────────
