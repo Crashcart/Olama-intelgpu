@@ -53,9 +53,13 @@ The installer will:
 2. Warn if no Intel GPU render node (`/dev/dri/renderD*`) is found
 3. Clone the repo to `/opt/olama-stack/`
 4. Create data directories under `/opt/olama/` (models, webui, searxng, pipelines, logs)
-5. Build the Ollama Intel GPU image (~5 min on first run — pulls Ollama from Docker Hub and installs Intel oneAPI drivers)
-6. Pull the `open-webui`, `searxng`, `pipelines`, and `dozzle` images
-7. Start all 5 containers and wait until Ollama and Open WebUI are ready
+5. Write `docker/.env` (or update it if one already exists from a previous run)
+6. Open the three host-facing ports in ufw or firewalld so other devices on your network can connect
+7. Build the Ollama Intel GPU image (~5 min on first run — pulls Ollama from Docker Hub and installs Intel oneAPI drivers)
+8. Pull the `open-webui`, `searxng`, `pipelines`, and `dozzle` images
+9. Start all 5 containers and wait until Ollama and Open WebUI are ready
+
+The installer is **idempotent** — safe to re-run after an upgrade or if a previous run failed. It updates ports, GPU group IDs, and other install-time values in an existing `.env` without touching your customised settings (API keys, model names, feature flags, etc.).
 
 **The installer is safe to run over SSH — closing the terminal will not interrupt it.**
 All output is logged to `/tmp/olama-install.log`. To follow progress from another session:
@@ -82,6 +86,17 @@ docker exec olama ollama pull llama3.2:3b
 **Step 3 — Open the chat UI**
 
 Open your browser at **http://localhost:45213** and select the model you just pulled.
+
+To access from another device on the same network, use the host machine's IP address. The installer prints this at the end:
+
+```
+From other devices on your network:
+  Chat UI    →  http://192.168.x.x:45213
+  Ollama API →  http://192.168.x.x:11434
+  Log viewer →  http://192.168.x.x:9999
+```
+
+The installer automatically opens those ports in ufw/firewalld. If you use a different firewall, allow TCP ports `45213`, `11434`, and `9999` from your local network.
 
 **Optional — Custom install options**
 
