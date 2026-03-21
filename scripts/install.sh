@@ -88,8 +88,24 @@ info "Checking prerequisites..."
 command -v docker &>/dev/null \
   || error "Docker is not installed. See https://docs.docker.com/get-docker/"
 
-docker info &>/dev/null \
-  || error "Docker daemon is not running. Start it: sudo systemctl start docker"
+if ! docker info &>/dev/null; then
+  warn "Docker daemon is not running — attempting to start it..."
+  if command -v systemctl &>/dev/null; then
+    sudo systemctl start docker \
+      || error "Failed to start Docker daemon. Run manually: sudo systemctl start docker"
+    # Wait up to 15 s for the daemon to become ready
+    local _i=0
+    until docker info &>/dev/null; do
+      _i=$((_i + 1))
+      [[ $_i -ge 15 ]] && error "Docker daemon did not become ready in time. Check: sudo systemctl status docker"
+      sleep 1
+    done
+    success "Docker daemon started."
+    info "To start Docker automatically on boot: sudo systemctl enable docker"
+  else
+    error "Docker daemon is not running. Start it manually and re-run this installer."
+  fi
+fi
 
 if docker compose version &>/dev/null 2>&1; then
   COMPOSE_CMD="docker compose"
