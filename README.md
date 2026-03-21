@@ -3,7 +3,7 @@
 Run [Ollama](https://ollama.com) in Docker with Intel GPU acceleration.
 Supports **Intel Arc**, **Iris Xe**, and **integrated Intel graphics** via Intel's oneAPI runtime.
 
-> **No models are bundled.** After starting the stack, pull whichever model you want with `docker exec olama ollama pull <model>`.
+> **No models are bundled.** After starting, open the **Model Manager** at `http://localhost:45214` to search, download, and delete models from your browser — no CLI needed.
 
 ---
 
@@ -13,6 +13,7 @@ Supports **Intel Arc**, **Iris Xe**, and **integrated Intel graphics** via Intel
 |---|---|---|---|
 | `olama` | `olama` | Ollama LLM engine — Intel GPU passthrough | `11434` |
 | `olama-open-webui` | `open-webui` | Browser chat UI | `45213` |
+| `olama-model-manager` | `model-manager` | Model search, download, and delete UI | `45214` |
 | `olama-searxng` | `searxng` | Self-hosted web search backend | internal |
 | `olama-pipelines` | `pipelines` | Python tool/function runtime for Open WebUI | internal |
 | `olama-dozzle` | `dozzle` | Real-time web log viewer for all containers | `9999` |
@@ -39,7 +40,7 @@ All data is stored under a single configurable `DATA_DIR` on the host — no ano
 
 ## Method 1 — One-Command Installer
 
-The fastest way to get the full stack running. Clones the repo, installs Docker if needed, builds the Intel GPU image, creates data directories, writes a `.env`, and starts all 5 containers. Safe to run over SSH — closing the terminal will not stop the install.
+The fastest way to get the full stack running. Clones the repo, installs Docker if needed, builds the Intel GPU image, creates data directories, writes a `.env`, and starts all 6 containers. Safe to run over SSH — closing the terminal will not stop the install.
 
 **Step 1 — Run the installer**
 
@@ -57,7 +58,7 @@ The installer will:
 6. Open the three host-facing ports in ufw or firewalld for LAN access
 7. Build the Ollama Intel GPU image (~5 min first run — installs Intel oneAPI drivers)
 8. Pull images for any containers that do not already exist; skip existing ones
-9. Start all 5 containers
+9. Start all 6 containers
 10. Wait until Ollama and Open WebUI are healthy
 
 The installer is **idempotent** — safe to re-run after an upgrade or a failed run. It updates ports and GPU group IDs in an existing `.env` without touching your custom settings (API keys, model names, feature flags, etc.).
@@ -68,9 +69,13 @@ The installer is **idempotent** — safe to re-run after an upgrade or a failed 
 tail -f /tmp/olama-install.log
 ```
 
-**Step 2 — Pull a model**
+**Step 2 — Download a model**
 
-No model is included — pull one after the stack is running:
+No model is bundled — download one after the stack is running. The easiest way is the Model Manager web UI:
+
+Open **http://localhost:45214** — browse the catalog, filter by category, and click **Download**.
+
+Or from the CLI:
 
 ```bash
 # Interactive menu
@@ -89,9 +94,10 @@ To access from another device on the same network, use the host's IP — the ins
 
 ```
 From other devices on your network:
-  Chat UI    →  http://192.168.x.x:45213
-  Ollama API →  http://192.168.x.x:11434
-  Log viewer →  http://192.168.x.x:9999
+  Chat UI        →  http://192.168.x.x:45213
+  Model Manager  →  http://192.168.x.x:45214
+  Ollama API     →  http://192.168.x.x:11434
+  Log viewer     →  http://192.168.x.x:9999
 ```
 
 ---
@@ -185,20 +191,30 @@ Open **http://localhost:45213**.
 
 ## Upgrading Containers
 
-By default the installer and `docker compose up --no-recreate` leave existing containers untouched. To upgrade a specific container to its latest image:
+Use `scripts/update.sh` to pull fresh images for the UI services and fix the "Ollama is running" blank-page issue:
 
 ```bash
-# Pull the new image
-docker compose -f /opt/olama-stack/docker/docker-compose.yml pull open-webui
+# Update open-webui and model-manager (most common)
+bash /opt/olama-stack/scripts/update.sh
 
-# Recreate only that container
-docker compose -f /opt/olama-stack/docker/docker-compose.yml up -d --force-recreate open-webui
+# Update every service including searxng, pipelines, dozzle
+bash /opt/olama-stack/scripts/update.sh --all
 ```
 
-To upgrade the entire stack at once:
+The script pulls the latest images, rebuilds any locally-built containers, and recreates the affected containers. All data is preserved.
+
+To upgrade the entire stack from scratch:
 
 ```bash
 bash /opt/olama-stack/scripts/install.sh --recreate
+```
+
+**Fixing the "Ollama is running" blank page in Open WebUI:**
+
+This happens when the cached `open-webui` image is stale. Run:
+
+```bash
+bash /opt/olama-stack/scripts/update.sh
 ```
 
 ---
@@ -277,21 +293,30 @@ docker exec olama ollama run mistral "hello"
 
 ---
 
-## Available Models
+## Model Manager
 
-| Model | Size | Notes |
+The **Model Manager** at `http://localhost:45214` lets you:
+
+- Browse a curated catalog of 25+ models
+- Filter by category: Text · Code · Vision · Embedding · Fast (&lt;2 GB) · Large
+- Search by name or description
+- Download any model with real-time progress
+- Pull any unlisted model by entering its name (e.g. `llama3.3`, `deepseek-r1:7b`)
+- Delete installed models to reclaim disk space
+
+The Installed tab shows every model currently on disk with its size and pull date.
+
+**Recommended first models:**
+
+| Model | Size | Good for |
 |---|---|---|
-| `llama3.2:1b` | ~770 MB | Fastest, minimal hardware |
-| `gemma2:2b` | ~1.6 GB | Google Gemma 2 |
-| `llama3.2:3b` | ~2.0 GB | Meta Llama 3.2 |
-| `phi3:mini` | ~2.3 GB | Microsoft Phi-3 |
-| `codellama:7b` | ~3.8 GB | Code generation |
-| `mistral` | **~4.1 GB** | **Recommended starting model** |
-| `llama3.1:8b` | ~4.7 GB | High quality, 8B params |
-
-```bash
-docker exec olama ollama pull <model-name>
-```
+| `llama3.2:1b` | 770 MB | Fast replies, minimal VRAM |
+| `llama3.2:3b` | 2.0 GB | Good general model, fast |
+| `phi3:mini` | 2.3 GB | Strong reasoning for the size |
+| `mistral` | **4.1 GB** | **Solid all-round default** |
+| `llama3.1:8b` | 4.7 GB | High quality, everyday tasks |
+| `qwen2.5-coder:7b` | 4.7 GB | Code generation |
+| `llava:7b` | 4.7 GB | Vision — understands images |
 
 ---
 
@@ -341,12 +366,17 @@ Copy `runtipi/apps/olama-intel-gpu/` into your Runtipi `apps/` directory and ref
 Olama-intelgpu/
 ├── docker/
 │   ├── Dockerfile               # Ollama + Intel oneAPI GPU drivers
-│   ├── docker-compose.yml       # Full stack: olama + open-webui + searxng + pipelines + dozzle
+│   ├── docker-compose.yml       # Full stack: olama + open-webui + model-manager + searxng + pipelines + dozzle
+│   ├── model-manager/
+│   │   ├── Dockerfile           # Python 3.11 slim + FastAPI
+│   │   ├── main.py              # API proxy + model catalog
+│   │   └── static/index.html   # Browser UI
 │   └── searxng/
 │       └── settings.yml         # SearXNG config (auto-mounted read-only)
 ├── scripts/
 │   ├── install.sh               # One-command full-stack installer
-│   ├── pull-model.sh            # Interactive model downloader
+│   ├── update.sh                # Pull fresh images and recreate UI containers
+│   ├── pull-model.sh            # Interactive model downloader (CLI)
 │   └── logs.sh                  # Log viewer, exporter, debug mode toggle
 ├── runtipi/
 │   └── apps/
