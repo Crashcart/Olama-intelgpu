@@ -85,16 +85,28 @@ info "             → tail -f ${LOG_FILE}  (safe to close terminal)"
 sep
 info "Checking prerequisites..."
 
-command -v docker &>/dev/null \
-  || error "Docker is not installed. See https://docs.docker.com/get-docker/"
+# ── Install Docker if missing ──────────────────────────────────────────────────
+if ! command -v docker &>/dev/null; then
+  warn "Docker not found — installing via get.docker.com..."
+  curl -fsSL https://get.docker.com | sudo sh \
+    || error "Docker installation failed. Install manually: https://docs.docker.com/get-docker/"
+  sudo usermod -aG docker "$USER" || true
+  # The group change needs a re-login to take effect; for this session
+  # make the socket accessible so the rest of the installer can proceed.
+  sudo chmod 660 /var/run/docker.sock 2>/dev/null || true
+  sudo systemctl enable docker 2>/dev/null || true
+  success "Docker installed and enabled on boot."
+  info "Note: log out and back in after install so docker works without sudo."
+fi
 
+# ── Start Docker daemon if not running ────────────────────────────────────────
 if ! docker info &>/dev/null; then
   warn "Docker daemon is not running — attempting to start it..."
   if command -v systemctl &>/dev/null; then
     sudo systemctl start docker \
       || error "Failed to start Docker daemon. Run manually: sudo systemctl start docker"
     # Wait up to 15 s for the daemon to become ready
-    local _i=0
+    _i=0
     until docker info &>/dev/null; do
       _i=$((_i + 1))
       [[ $_i -ge 15 ]] && error "Docker daemon did not become ready in time. Check: sudo systemctl status docker"
@@ -107,12 +119,27 @@ if ! docker info &>/dev/null; then
   fi
 fi
 
+# ── Install Docker Compose plugin if missing ───────────────────────────────────
 if docker compose version &>/dev/null 2>&1; then
   COMPOSE_CMD="docker compose"
 elif command -v docker-compose &>/dev/null; then
   COMPOSE_CMD="docker-compose"
 else
-  error "Docker Compose not found. See https://docs.docker.com/compose/install/"
+  warn "Docker Compose not found — installing docker-compose-plugin..."
+  if command -v apt-get &>/dev/null; then
+    sudo apt-get install -y docker-compose-plugin \
+      || error "Failed to install docker-compose-plugin. See https://docs.docker.com/compose/install/"
+  elif command -v dnf &>/dev/null; then
+    sudo dnf install -y docker-compose-plugin \
+      || error "Failed to install docker-compose-plugin. See https://docs.docker.com/compose/install/"
+  elif command -v yum &>/dev/null; then
+    sudo yum install -y docker-compose-plugin \
+      || error "Failed to install docker-compose-plugin. See https://docs.docker.com/compose/install/"
+  else
+    error "Docker Compose not found and could not be installed automatically. See https://docs.docker.com/compose/install/"
+  fi
+  success "Docker Compose installed."
+  COMPOSE_CMD="docker compose"
 fi
 
 if ! ls /dev/dri/renderD* &>/dev/null; then
