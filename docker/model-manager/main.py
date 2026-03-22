@@ -189,6 +189,11 @@ async def get_config():
 async def health_check():
     """Connectivity diagnostics for all internal stack services (Ollama, SearXNG, Pipelines)."""
     import asyncio, time
+    from urllib.parse import urlparse
+
+    # Probe timeout: must be well under the portal's 12 s browser fetch timeout.
+    # All 3 probes run concurrently, so worst-case response time ≈ PROBE_TIMEOUT.
+    PROBE_TIMEOUT = 4  # seconds
 
     # Internal services: (probe_url, include_version_field)
     INTERNAL = {
@@ -198,12 +203,13 @@ async def health_check():
     }
 
     async def probe(key: str, url: str, want_version: bool) -> tuple[str, dict]:
-        base = url.rstrip("/api/version").rstrip("/")
+        parsed = urlparse(url)
+        base = f"{parsed.scheme}://{parsed.netloc}"
         entry: dict = {"url": base, "ok": False, "latency_ms": None,
                        "error": None, "error_type": None}
         t0 = time.monotonic()
         try:
-            async with httpx.AsyncClient(timeout=8) as client:
+            async with httpx.AsyncClient(timeout=PROBE_TIMEOUT) as client:
                 resp = await client.get(url)
                 entry["latency_ms"] = round((time.monotonic() - t0) * 1000)
                 resp.raise_for_status()
@@ -219,7 +225,7 @@ async def health_check():
             entry["error_type"] = "ConnectError"
         except httpx.TimeoutException:
             entry["latency_ms"] = round((time.monotonic() - t0) * 1000)
-            entry["error"] = "Connection timed out after 8 s"
+            entry["error"] = f"Connection timed out after {PROBE_TIMEOUT} s"
             entry["error_type"] = "Timeout"
         except Exception as exc:
             entry["latency_ms"] = round((time.monotonic() - t0) * 1000)
