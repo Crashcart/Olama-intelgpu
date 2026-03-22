@@ -11,7 +11,7 @@
 # Options:
 #   --data-dir    DIR   Where data was stored (default: /opt/olama)
 #   --install-dir DIR   Where stack files were installed (default: /opt/olama-stack)
-#   --purge             Also delete the data directory (models, history, config)
+#   --keep-data         Keep the data directory (models, history, config)
 #   --keep-images       Keep Docker images (default: remove all olama images)
 #   --yes / -y          Skip confirmation prompts
 # =============================================================================
@@ -34,7 +34,7 @@ MODEL_MANAGER_PORT="${MODEL_MANAGER_PORT:-45214}"
 OLLAMA_PORT="${OLLAMA_PORT:-11434}"
 DOZZLE_PORT="${DOZZLE_PORT:-9999}"
 ALLOW_FROM="${ALLOW_FROM:-any}"
-PURGE_DATA=false
+PURGE_DATA=true
 KEEP_IMAGES=false
 YES=false
 
@@ -51,15 +51,16 @@ while [[ $# -gt 0 ]]; do
   case $1 in
     --data-dir)    DATA_DIR="$2";    shift 2 ;;
     --install-dir) INSTALL_DIR="$2"; shift 2 ;;
-    --purge)       PURGE_DATA=true;  shift ;;
+    --keep-data)   PURGE_DATA=false; shift ;;
+    --purge)       PURGE_DATA=true;  shift ;;  # kept for backwards compat; now the default
     --keep-images) KEEP_IMAGES=true; shift ;;
     --yes|-y)      YES=true;         shift ;;
     --help|-h)
-      echo "Usage: $0 [--data-dir DIR] [--install-dir DIR] [--purge] [--keep-images] [--yes]"
+      echo "Usage: $0 [--data-dir DIR] [--install-dir DIR] [--keep-data] [--keep-images] [--yes]"
       echo
       echo "  --data-dir    DIR   Where data is stored   (default: /opt/olama)"
       echo "  --install-dir DIR   Where stack files live (default: /opt/olama-stack)"
-      echo "  --purge             Also delete the data directory (models, history, config)"
+      echo "  --keep-data         Keep the data directory (models, history, config)"
       echo "  --keep-images       Keep Docker images     (default: remove all olama images)"
       echo "  --yes / -y          Skip confirmation prompts"
       exit 0 ;;
@@ -156,15 +157,19 @@ fi
 
 echo "    • Remove firewall rules added by the installer"
 [[ -d "$INSTALL_DIR" ]] && echo "    • Delete stack files at ${INSTALL_DIR}"
+if $PURGE_DATA; then
+  _data_size=$(du -sh "$DATA_DIR" 2>/dev/null | cut -f1 || echo "?")
+  echo -e "    • ${RED}${BOLD}Delete data directory ${DATA_DIR}${NC}  ${RED}(~${_data_size} — models, history, config)${NC}"
+else
+  echo    "    • Leave data at ${DATA_DIR} untouched"
+fi
 echo
 if $PURGE_DATA; then
-  echo -e "  ${RED}${BOLD}--purge:  ALSO DELETE ${DATA_DIR}${NC}"
-  echo -e "  ${RED}          This permanently removes all models, chat history, and config.${NC}"
-  _data_size=$(du -sh "$DATA_DIR" 2>/dev/null | cut -f1 || echo "?")
-  echo -e "  ${RED}          Estimated size: ${_data_size}${NC}"
+  echo -e "  ${RED}${BOLD}WARNING: ${DATA_DIR} will be permanently deleted.${NC}"
+  echo -e "  ${RED}This includes all model weights, chat history, and config.${NC}"
+  echo -e "  ${YELLOW}Pass --keep-data to skip data removal.${NC}"
 else
-  echo -e "  ${YELLOW}Data at ${DATA_DIR} will be KEPT.${NC}"
-  echo    "  (use --purge to also delete models, history, and config)"
+  echo -e "  ${YELLOW}Data at ${DATA_DIR} will be KEPT (pass --purge to delete it).${NC}"
 fi
 echo
 
@@ -175,16 +180,17 @@ if ! $YES; then
   [[ "$_confirm" =~ ^[Yy]$ ]] || { info "Aborted — nothing was changed."; exit 0; }
 fi
 
-# ── Extra confirmation for --purge ────────────────────────────────────────────
+# ── Extra confirmation for data deletion ──────────────────────────────────────
 if $PURGE_DATA && ! $YES; then
   echo -e "  ${RED}${BOLD}FINAL WARNING — this cannot be undone.${NC}"
   echo    "  All model weights, chat history, RAG documents, and config"
   echo    "  at ${DATA_DIR} will be permanently deleted."
+  echo    "  (Run with --keep-data to skip this step.)"
   echo
-  read -rp "  Type 'purge' to confirm: " _purge_confirm
+  read -rp "  Type 'delete' to confirm data removal, or press Enter to keep data: " _purge_confirm
   echo
-  if [[ "$_purge_confirm" != "purge" ]]; then
-    warn "Purge not confirmed — data will be kept. Continuing with container removal only."
+  if [[ "$_purge_confirm" != "delete" ]]; then
+    warn "Data removal skipped — ${DATA_DIR} will be kept. Continuing with container removal only."
     PURGE_DATA=false
   fi
 fi
@@ -402,7 +408,8 @@ if ! $PURGE_DATA && [[ -d "$DATA_DIR" ]]; then
   echo    "    ├── models/     — downloaded AI model weights"
   echo    "    ├── webui/      — chat history, RAG documents, settings"
   echo    "    ├── searxng/    — SearXNG config"
-  echo    "    └── pipelines/  — custom pipeline scripts"
+  echo    "    ├── pipelines/  — custom pipeline scripts"
+  echo    "    └── memory/     — AI memory store"
   echo
   echo    "  To delete it now:  sudo rm -rf ${DATA_DIR}"
   echo    "  To reinstall:      bash <(curl -fsSL https://raw.githubusercontent.com/Crashcart/Olama-intelgpu/main/scripts/install.sh)"
