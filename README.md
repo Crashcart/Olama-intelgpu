@@ -107,6 +107,17 @@ From other devices on your network:
   Log viewer          →  http://boris.local:9999
 ```
 
+> **ZeroTier / VPN users** — `.local` (mDNS) hostnames are link-local and do
+> not propagate over ZeroTier or most VPN tunnels.  Use the host's **ZeroTier
+> IP address** instead of `boris.local`:
+> ```
+> Portal  →  http://192.168.x.x:45200
+> Ollama  →  http://192.168.x.x:11434
+> ```
+> All services bind to `0.0.0.0`, so they are reachable on every interface
+> including ZeroTier.  The portal resolves service URLs from the hostname your
+> browser used to reach it, so navigating via the IP makes everything work.
+
 The stack binds to `0.0.0.0` so it is reachable on **all network interfaces and subnets** the host belongs to. See [Multi-Subnet Access](#multi-subnet-access) if you need to restrict which subnets can connect.
 
 ---
@@ -172,6 +183,28 @@ The stack is designed to work across subnets out of the box:
   ```
 
   Then restart: `docker compose -f /opt/olama-stack/docker/docker-compose.yml restart olama`
+
+- **ZeroTier** — ZeroTier creates a virtual network interface (e.g. `ztXXXXXX`). The stack binds to `0.0.0.0` so it listens on that interface automatically. The only thing to do is use the ZeroTier-assigned IP address instead of the `.local` mDNS hostname, because mDNS does not traverse ZeroTier:
+
+  ```bash
+  # Find your ZeroTier IP (shown in ZeroTier Central or via CLI)
+  ip addr show | grep zt   # Linux — look for the zt* interface
+  ```
+
+  Then access the stack via that IP:
+  ```
+  http://<zerotier-ip>:45200
+  ```
+
+  If you need to open the firewall for the ZeroTier subnet (e.g. `192.168.191.0/24`):
+  ```bash
+  sudo ufw allow from 192.168.191.0/24 to any port 45200,45213,45214,11434 proto tcp
+  ```
+
+  Add the ZeroTier prefix to `OLLAMA_ORIGINS` in `docker/.env` if direct browser→API calls fail:
+  ```ini
+  OLLAMA_ORIGINS=http://localhost,https://localhost,http://127.0.0.1,http://192.168.,http://10.,http://172.,http://192.168.191.
+  ```
 
 > **Note:** Routing between subnets is an infrastructure concern (router/firewall between VLANs). The stack itself has no subnet restrictions once the host firewall is open.
 
