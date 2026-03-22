@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# update.sh — Update the Olama stack to the latest images
+# update.sh — Update the Ollama stack to the latest images
 #
 # Usage:
 #   bash scripts/update.sh           # update open-webui + model-manager + portal

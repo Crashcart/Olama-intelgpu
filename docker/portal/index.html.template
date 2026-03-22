@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Olama Stack</title>
+  <title>Ollama Stack</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -476,7 +476,7 @@
 <body>
 
 <nav>
-  <div class="logo">Olama <em>Stack</em></div>
+  <div class="logo">Ollama <em>Stack</em></div>
 
   <div class="nav-group">
 
@@ -779,10 +779,10 @@ function showFrame(name) {
 
   // Update page title
   document.title =
-    name === 'chat'   ? 'Chat \u2014 Olama Stack' :
-    name === 'models' ? 'Models \u2014 Olama Stack' :
-    name === 'logs'   ? 'Logs \u2014 Olama Stack' :
-                        'Crit Issues \u2014 Olama Stack';
+    name === 'chat'   ? 'Chat \u2014 Ollama Stack' :
+    name === 'models' ? 'Models \u2014 Ollama Stack' :
+    name === 'logs'   ? 'Logs \u2014 Ollama Stack' :
+                        'Crit Issues \u2014 Ollama Stack';
 }
 
 function frameReady(name) {
@@ -1064,7 +1064,7 @@ function renderRows(rows) {
 
 async function copyDiagnostic() {
   const lines = [
-    'Olama Stack \u2014 Diagnostic Report',
+    'Ollama Stack \u2014 Diagnostic Report',
     `Generated : ${new Date().toISOString()}`,
     `Portal URL: ${window.location.href}`,
     `User-Agent: ${navigator.userAgent}`,

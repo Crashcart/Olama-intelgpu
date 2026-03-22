@@ -32,7 +32,7 @@ from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-OLLAMA_URL    = os.environ.get("OLLAMA_BASE_URL", "http://olama:11434").rstrip("/")
+OLLAMA_URL    = os.environ.get("OLLAMA_BASE_URL", "http://ollama:11434").rstrip("/")
 OLLAMA_SOCKET = os.environ.get("OLLAMA_SOCKET", "")
 DB_PATH       = os.environ.get("DB_PATH", "/data/ghost.db")
 

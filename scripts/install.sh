@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 # =============================================================================
-# install.sh — Install the full Olama Intel GPU stack
+# install.sh — Install the full Ollama Intel GPU stack
 #
 # Usage (from a local clone):
 #   bash scripts/install.sh [OPTIONS]
 #
 # Usage (one-liner curl pipe — repo must be public):
-#   bash <(curl -fsSL https://raw.githubusercontent.com/Crashcart/Olama-intelgpu/main/scripts/install.sh) [OPTIONS]
+#   bash <(curl -fsSL https://raw.githubusercontent.com/Crashcart/Ollama-intelgpu/main/scripts/install.sh) [OPTIONS]
 #
 #   If main branch is not yet available (e.g. PR not merged), target the branch:
-#   bash <(curl -fsSL https://raw.githubusercontent.com/Crashcart/Olama-intelgpu/<branch>/scripts/install.sh) --branch <branch>
+#   bash <(curl -fsSL https://raw.githubusercontent.com/Crashcart/Ollama-intelgpu/<branch>/scripts/install.sh) --branch <branch>
 #
 # Options:
-#   --data-dir  DIR   Where to store models, chat history, config (default: /opt/olama)
+#   --data-dir  DIR   Where to store models, chat history, config (default: /opt/ollama)
 #   --port      PORT  Host port for the Ollama API              (default: 11434)
 #   --webui-port PORT Host port for the Open WebUI chat UI      (default: 45213)
 #   --version   TAG   Ollama version tag                        (default: latest)
@@ -35,32 +35,32 @@ trap '' HUP
 
 # All stdout + stderr are mirrored to LOG_FILE from this point forward.
 # If the install fails the file can be reviewed or posted for support.
-LOG_FILE="${LOG_FILE:-/tmp/olama-install.log}"
-touch "$LOG_FILE" 2>/dev/null || LOG_FILE="/tmp/olama-install-$(id -u).log"
+LOG_FILE="${LOG_FILE:-/tmp/ollama-install.log}"
+touch "$LOG_FILE" 2>/dev/null || LOG_FILE="/tmp/ollama-install-$(id -u).log"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
 # ── Defaults ──────────────────────────────────────────────────────────────────
-DATA_DIR="${DATA_DIR:-/opt/olama}"
+DATA_DIR="${DATA_DIR:-/opt/ollama}"
 OLLAMA_PORT="${OLLAMA_PORT:-11434}"
 WEBUI_PORT="${WEBUI_PORT:-45213}"
 OLLAMA_VERSION="${OLLAMA_VERSION:-latest}"
-REPO_GIT="https://github.com/Crashcart/Olama-intelgpu"
+REPO_GIT="https://github.com/Crashcart/Ollama-intelgpu"
 # Branch is auto-detected below; override with --branch or the REPO_BRANCH env var.
 REPO_BRANCH="${REPO_BRANCH:-}"
 DOZZLE_PORT="${DOZZLE_PORT:-9999}"
 MODEL_MANAGER_PORT="${MODEL_MANAGER_PORT:-45214}"
 PORTAL_PORT="${PORTAL_PORT:-45200}"
-COMPOSE_PROJECT="olama"
+COMPOSE_PROJECT="ollama"
 RECREATE_CONTAINERS=false
 # Comma-separated CIDRs that may reach the UI ports (blank = any source = 0.0.0.0/0)
 ALLOW_FROM="${ALLOW_FROM:-}"
 
 # ── Color helpers ──────────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
-info()    { echo -e "${CYAN}[olama]${NC} $*"; }
-success() { echo -e "${GREEN}[olama]${NC} $*"; }
-warn()    { echo -e "${YELLOW}[olama]${NC} $*"; }
-error()   { echo -e "${RED}[olama]${NC} $*" >&2; echo -e "${RED}[olama]${NC} Full install log: ${LOG_FILE}" >&2; exit 1; }
+info()    { echo -e "${CYAN}[ollama]${NC} $*"; }
+success() { echo -e "${GREEN}[ollama]${NC} $*"; }
+warn()    { echo -e "${YELLOW}[ollama]${NC} $*"; }
+error()   { echo -e "${RED}[ollama]${NC} $*" >&2; echo -e "${RED}[ollama]${NC} Full install log: ${LOG_FILE}" >&2; exit 1; }
 sep()     { echo "──────────────────────────────────────────────────────"; }
 
 # ── Argument parsing ───────────────────────────────────────────────────────────
@@ -76,7 +76,7 @@ while [[ $# -gt 0 ]]; do
     --help|-h)
       echo "Usage: $0 [--data-dir DIR] [--port PORT] [--webui-port PORT] [--version TAG] [--branch NAME] [--recreate] [--allow-from CIDR[,CIDR...]]"
       echo
-      echo "  --data-dir   DIR            Storage root for models, chat history, config (default: /opt/olama)"
+      echo "  --data-dir   DIR            Storage root for models, chat history, config (default: /opt/ollama)"
       echo "  --port       PORT           Host port for Ollama API   (default: 11434)"
       echo "  --webui-port PORT           Host port for Open WebUI   (default: 45213)"
       echo "  --version    TAG            Ollama image tag           (default: latest)"
@@ -238,11 +238,11 @@ DOCKER_DIR="${REPO_ROOT}/docker"
 
 # ── Choose install directory ──────────────────────────────────────────────────
 # When running from a clone, use that clone in-place (no copy needed).
-# When running via curl, copy the repo files to /opt/olama-stack so the stack
+# When running via curl, copy the repo files to /opt/ollama-stack so the stack
 # can be managed after the temp clone is cleaned up.
 
 if [[ -n "$CLONE_TEMPDIR" ]]; then
-  INSTALL_DIR="${INSTALL_DIR:-/opt/olama-stack}"
+  INSTALL_DIR="${INSTALL_DIR:-/opt/ollama-stack}"
   info "Copying stack files to ${INSTALL_DIR}..."
   sudo mkdir -p "$INSTALL_DIR"
   sudo chown "$USER:$USER" "$INSTALL_DIR"
@@ -350,7 +350,7 @@ _port_owner() {
   echo "${_who:-unknown process}"
 }
 
-# Checks one port; if it is in use by a non-olama process, prompts for
+# Checks one port; if it is in use by a non-ollama process, prompts for
 # an alternative and updates the named variable.
 _resolve_port() {
   local var_name="$1"   # shell variable to read/write, e.g. PORTAL_PORT
@@ -367,8 +367,8 @@ _resolve_port() {
   # (happens on re-install / --recreate).  If so, it is fine to reuse.
   local _owner
   _owner=$(_port_owner "$current")
-  if echo "$_owner" | grep -qiE "olama|docker(-proxy)?"; then
-    info "  :${current}  ${label} — in use by existing Olama container (ok)"
+  if echo "$_owner" | grep -qiE "ollama|docker(-proxy)?"; then
+    info "  :${current}  ${label} — in use by existing Ollama container (ok)"
     return 0
   fi
 
@@ -472,7 +472,7 @@ if command -v ufw &>/dev/null && ufw status 2>/dev/null | grep -q "Status: activ
       if [[ "$cidr" == "any" ]]; then
         # Simple allow — source-agnostic; idempotent check via status
         if ! ufw status | grep -qE "^${p}[/ ].*ALLOW"; then
-          ufw allow "${p}/tcp" comment "olama — ${lbl}" > /dev/null \
+          ufw allow "${p}/tcp" comment "ollama — ${lbl}" > /dev/null \
             && _fw_opened+=("${p}/tcp from any (${lbl})")
         else
           info "  Port ${p} already open in ufw — skipping."
@@ -481,7 +481,7 @@ if command -v ufw &>/dev/null && ufw status 2>/dev/null | grep -q "Status: activ
         # Source-restricted rule
         if ! ufw status | grep -qE "^${p}[/ ].*${cidr}.*ALLOW|ALLOW.*${cidr}.*${p}"; then
           ufw allow from "$cidr" to any port "$p" proto tcp \
-            comment "olama — ${lbl}" > /dev/null \
+            comment "ollama — ${lbl}" > /dev/null \
             && _fw_opened+=("${p}/tcp from ${cidr} (${lbl})")
         else
           info "  Port ${p} from ${cidr} already open in ufw — skipping."
@@ -539,9 +539,9 @@ fi
 # COMPOSE_ANSI=never + --progress plain suppress ANSI spinners/color codes so
 # the log file stays readable with `tail -f` or a plain text editor.
 sep
-info "Building Olama Intel GPU image (first run: ~5 min, downloads Intel GPU drivers)..."
+info "Building Ollama Intel GPU image (first run: ~5 min, downloads Intel GPU drivers)..."
 cd "$DOCKER_DIR"
-COMPOSE_ANSI=never $COMPOSE_CMD build --pull --progress plain olama
+COMPOSE_ANSI=never $COMPOSE_CMD build --pull --progress plain ollama
 success "Intel GPU image built."
 
 # ── Pull public images / build local images ───────────────────────────────────
@@ -552,7 +552,7 @@ info "Checking service containers..."
 
 # Public registry images
 for svc in open-webui searxng pipelines dozzle; do
-  cname="olama-${svc}"
+  cname="ollama-${svc}"
   if $RECREATE_CONTAINERS; then
     info "  $cname — --recreate set, pulling latest image..."
     COMPOSE_ANSI=never $COMPOSE_CMD pull "$svc"
@@ -568,12 +568,12 @@ done
 
 # Locally-built images (no registry — must use build, not pull)
 for svc in model-manager portal; do
-  cname="olama-${svc}"
+  cname="ollama-${svc}"
   if $RECREATE_CONTAINERS; then
     info "  $cname — --recreate set, rebuilding image..."
     COMPOSE_ANSI=never $COMPOSE_CMD build --progress plain "$svc"
     success "  $cname image ready."
-  elif docker image inspect "olama-${svc}:latest" &>/dev/null; then
+  elif docker image inspect "ollama-${svc}:latest" &>/dev/null; then
     info "  $cname — image already built, skipping"
   else
     info "  $cname — not found, building image..."
@@ -584,7 +584,7 @@ done
 
 # ── Start the full stack ───────────────────────────────────────────────────────
 sep
-info "Starting Olama stack (7 containers)..."
+info "Starting Ollama stack (7 containers)..."
 if $RECREATE_CONTAINERS; then
   info "(--recreate: existing containers will be replaced)"
   $COMPOSE_CMD up -d --force-recreate
@@ -599,7 +599,7 @@ RETRIES=40
 until curl -sf "http://localhost:${OLLAMA_PORT}/" &>/dev/null; do
   RETRIES=$((RETRIES - 1))
   if [[ $RETRIES -le 0 ]]; then
-    error "Ollama did not become ready in time. Debug: docker logs olama"
+    error "Ollama did not become ready in time. Debug: docker logs ollama"
   fi
   printf '.'
   sleep 3
@@ -614,7 +614,7 @@ until curl -sf "http://localhost:${WEBUI_PORT}/" &>/dev/null; do
   RETRIES=$((RETRIES - 1))
   if [[ $RETRIES -le 0 ]]; then
     warn "Open WebUI did not become ready in time — it may still be starting."
-    warn "Check: docker logs olama-open-webui"
+    warn "Check: docker logs ollama-open-webui"
     break
   fi
   printf '.'
@@ -627,7 +627,7 @@ echo
 _lan_ip=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src") {print $(i+1); exit}}')
 
 sep
-success "Olama stack is running!"
+success "Ollama stack is running!"
 echo
 echo "  ┌─ Unified portal (recommended bookmark) ──────────────────────┐"
 echo "  │  http://localhost:${PORTAL_PORT}   (Chat + Models + Logs in one page)  │"
@@ -657,5 +657,5 @@ echo "  If Open WebUI shows a blank page or 'Ollama is running':"
 echo "    bash ${INSTALL_DIR}/scripts/update.sh"
 echo
 echo "  Verify Intel GPU is in use (after pulling a model):"
-echo "    docker exec olama clinfo | grep -i 'device name'"
+echo "    docker exec ollama clinfo | grep -i 'device name'"
 sep

@@ -1,28 +1,28 @@
 version: "3.9"
 
 # =============================================================================
-# Olama — Intel GPU LLM Stack (Runtipi edition)
+# Ollama — Intel GPU LLM Stack (Runtipi edition)
 #
 # This compose file is adapted for Runtipi's app store conventions:
 #   - ${APP_PORT} is the host port set during app install
 #   - ${APP_DATA_DIR} is Runtipi's managed data directory for this app
 #   - Form fields from config.json are injected as environment variables
 #
-# IMPORTANT: The olama container requires a pre-built Intel GPU image.
+# IMPORTANT: The ollama container requires a pre-built Intel GPU image.
 # Build and push it before installing this app in Runtipi:
-#   cd docker/ && docker build -t ghcr.io/crashcart/olama-intel-gpu:latest .
-#   docker push ghcr.io/crashcart/olama-intel-gpu:latest
+#   cd docker/ && docker build -t ghcr.io/crashcart/ollama-intel-gpu:latest .
+#   docker push ghcr.io/crashcart/ollama-intel-gpu:latest
 # =============================================================================
 
 services:
 
-  olama-intel-gpu:
-    image: ghcr.io/crashcart/olama-intel-gpu:latest
-    container_name: olama-intel-gpu
+  ollama-intel-gpu:
+    image: ghcr.io/crashcart/ollama-intel-gpu:latest
+    container_name: ollama-intel-gpu
     restart: unless-stopped
 
     labels:
-      com.olama.category: "ai-core"
+      com.ollama.category: "ai-core"
 
     # Intel GPU device passthrough (Arc / Iris Xe / integrated)
     devices:
@@ -55,19 +55,19 @@ services:
     networks:
       - tipi_main_network
 
-  olama-intel-gpu-webui:
+  ollama-intel-gpu-webui:
     image: ghcr.io/open-webui/open-webui:main
-    container_name: olama-intel-gpu-webui
+    container_name: ollama-intel-gpu-webui
     restart: unless-stopped
 
     labels:
-      com.olama.category: "interface"
+      com.ollama.category: "interface"
     depends_on:
-      olama-intel-gpu:
+      ollama-intel-gpu:
         condition: service_healthy
-      olama-intel-gpu-searxng:
+      ollama-intel-gpu-searxng:
         condition: service_healthy
-      olama-intel-gpu-pipelines:
+      ollama-intel-gpu-pipelines:
         condition: service_healthy
 
     ports:
@@ -75,12 +75,12 @@ services:
 
     environment:
       # LLM engine
-      - OLLAMA_BASE_URL=http://olama-intel-gpu:11434
+      - OLLAMA_BASE_URL=http://ollama-intel-gpu:11434
       - DEFAULT_MODELS=${DEFAULT_MODELS:-}
 
       # Pipelines
       - ENABLE_OPENAI_API=true
-      - OPENAI_API_BASE_URLS=http://olama-intel-gpu-pipelines:9099
+      - OPENAI_API_BASE_URLS=http://ollama-intel-gpu-pipelines:9099
       - OPENAI_API_KEYS=${PIPELINES_API_KEY:-0p3n-w3bu!}
 
       # RAG — document Q&A
@@ -92,7 +92,7 @@ services:
       # Web search
       - ENABLE_RAG_WEB_SEARCH=true
       - RAG_WEB_SEARCH_ENGINE=searxng
-      - SEARXNG_QUERY_URL=http://olama-intel-gpu-searxng:8080/search?q=<query>&format=json
+      - SEARXNG_QUERY_URL=http://ollama-intel-gpu-searxng:8080/search?q=<query>&format=json
 
       # YouTube transcripts
       - YOUTUBE_LOADER_LANGUAGE=en
@@ -131,16 +131,16 @@ services:
     networks:
       - tipi_main_network
 
-  olama-intel-gpu-searxng:
+  ollama-intel-gpu-searxng:
     image: searxng/searxng:latest
-    container_name: olama-intel-gpu-searxng
+    container_name: ollama-intel-gpu-searxng
     restart: unless-stopped
 
     labels:
-      com.olama.category: "search"
+      com.ollama.category: "search"
 
     environment:
-      - SEARXNG_BASE_URL=http://olama-intel-gpu-searxng:8080
+      - SEARXNG_BASE_URL=http://ollama-intel-gpu-searxng:8080
       - SEARXNG_DEBUG=false
 
     volumes:
@@ -159,13 +159,13 @@ services:
     networks:
       - tipi_main_network
 
-  olama-intel-gpu-pipelines:
+  ollama-intel-gpu-pipelines:
     image: ghcr.io/open-webui/pipelines:main
-    container_name: olama-intel-gpu-pipelines
+    container_name: ollama-intel-gpu-pipelines
     restart: unless-stopped
 
     labels:
-      com.olama.category: "pipelines"
+      com.ollama.category: "pipelines"
 
     environment:
       - PIPELINES_API_KEY=${PIPELINES_API_KEY:-0p3n-w3bu!}
@@ -183,21 +183,21 @@ services:
     networks:
       - tipi_main_network
 
-  olama-intel-gpu-dozzle:
+  ollama-intel-gpu-dozzle:
     image: amir20/dozzle:latest
-    container_name: olama-intel-gpu-dozzle
+    container_name: ollama-intel-gpu-dozzle
     restart: unless-stopped
 
     labels:
-      com.olama.category: "logs"
+      com.ollama.category: "logs"
 
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
 
     environment:
       # Show only this stack's containers
-      - DOZZLE_FILTER=label=com.olama.category
-      - DOZZLE_HOSTNAME=olama-intel-gpu
+      - DOZZLE_FILTER=label=com.ollama.category
+      - DOZZLE_HOSTNAME=ollama-intel-gpu
       - DOZZLE_NO_ANALYTICS=true
 
     ports:

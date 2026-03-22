@@ -1,4 +1,4 @@
-# SearXNG configuration for Olama web search integration
+# SearXNG configuration for Ollama web search integration
 # Full reference: https://docs.searxng.org/admin/settings/settings.html
 
 use_default_settings: true

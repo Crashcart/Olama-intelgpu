@@ -1,16 +1,16 @@
 # =============================================================================
-# OLAMA — Intel GPU Docker Stack
+# OLLAMA — Intel GPU Docker Stack
 # =============================================================================
 #
 # ┌─────────────────────────────────────────────────────────────────────────┐
 # │  CATEGORY: AI CORE                                                      │
-# │    olama       — Ollama LLM engine with Intel GPU passthrough           │
+# │    ollama       — Ollama LLM engine with Intel GPU passthrough           │
 # │                  data: ${DATA_DIR}/models   (can grow to 100+ GB)       │
 # ├─────────────────────────────────────────────────────────────────────────┤
 # │  CATEGORY: INTERFACE                                                    │
 # │    portal          — Unified entry point: Chat+Models+Logs in one page  │
 # │                      (port 45200)  stateless — no data directory needed │
-# │    open-webui      — Browser chat UI connected to olama  (port 45213)   │
+# │    open-webui      — Browser chat UI connected to ollama  (port 45213)   │
 # │                      data: ${DATA_DIR}/webui  (chat history, docs, RAG) │
 # │    model-manager   — Model search, download, delete UI   (port 45214)   │
 # │                      stateless — no data directory needed               │
@@ -63,7 +63,7 @@ services:
 #            to export. Models are plain files and can be moved freely.
 # =============================================================================
 
-  olama:
+  ollama:
     <<: *internet-dns
     build:
       context: .
@@ -71,15 +71,15 @@ services:
       network: host          # Use host DNS so Intel GPU repo resolves during build
       args:
         OLLAMA_VERSION: ${OLLAMA_VERSION:-latest}
-    image: olama:${OLLAMA_VERSION:-latest}
-    container_name: olama
+    image: ollama:${OLLAMA_VERSION:-latest}
+    container_name: ollama
     restart: unless-stopped
 
     labels:
-      com.olama.category: "ai-core"
-      com.olama.description: "Ollama LLM inference engine — Intel GPU"
-      com.olama.data: "${DATA_DIR:-/opt/olama}/models"
-      com.olama.log: "${DATA_DIR:-/opt/olama}/logs/olama.log"
+      com.ollama.category: "ai-core"
+      com.ollama.description: "Ollama LLM inference engine — Intel GPU"
+      com.ollama.data: "${DATA_DIR:-/opt/ollama}/models"
+      com.ollama.log: "${DATA_DIR:-/opt/ollama}/logs/ollama.log"
 
     # Intel GPU device passthrough (Arc / Iris Xe / integrated Intel graphics)
     devices:
@@ -132,7 +132,7 @@ services:
       # ── Models (large, exportable) ────────────────────────────────────────
       # Bind-mounted to host so models survive image rebuilds and can be
       # copied/moved to another machine without re-downloading.
-      - ${DATA_DIR:-/opt/olama}/models:/root/.ollama
+      - ${DATA_DIR:-/opt/ollama}/models:/root/.ollama
 
     # Checks the Ollama HTTP API — visible as healthy/unhealthy in Portainer,
     # Dockge, Yacht, and any other Docker manager that reads healthcheck state.
@@ -149,10 +149,10 @@ services:
       options:
         max-size: "${LOG_MAX_SIZE:-10m}"
         max-file: "${LOG_MAX_FILES:-5}"
-        tag: "olama"
+        tag: "ollama"
 
     networks:
-      - olama_net
+      - ollama_net
 
 # =============================================================================
 #  CATEGORY: INTERFACE
@@ -170,12 +170,12 @@ services:
     image: ghcr.io/open-webui/open-webui:main
     pull_policy: if_not_present   # reuse existing container from a previous install
     platform: linux/amd64
-    container_name: olama-open-webui
+    container_name: ollama-open-webui
     restart: unless-stopped
     # Wait for all backends to pass their health checks before starting.
     # This prevents the UI from coming up before its dependencies are ready.
     depends_on:
-      olama:
+      ollama:
         condition: service_healthy
       searxng:
         condition: service_healthy
@@ -183,17 +183,17 @@ services:
         condition: service_healthy
 
     labels:
-      com.olama.category: "interface"
-      com.olama.description: "Open WebUI chat interface"
-      com.olama.data: "${DATA_DIR:-/opt/olama}/webui"
-      com.olama.log: "${DATA_DIR:-/opt/olama}/logs/webui.log"
+      com.ollama.category: "interface"
+      com.ollama.description: "Open WebUI chat interface"
+      com.ollama.data: "${DATA_DIR:-/opt/ollama}/webui"
+      com.ollama.log: "${DATA_DIR:-/opt/ollama}/logs/webui.log"
 
     ports:
       - "${WEBUI_PORT:-45213}:8080"
 
     environment:
       # ── LLM engine ───────────────────────────────────────────────────────
-      - OLLAMA_BASE_URL=http://olama:11434
+      - OLLAMA_BASE_URL=http://ollama:11434
 
       # ── Default model ───────────────────────────────────────────────────
       # Pre-select a model for new chats. Leave empty to let users pick.
@@ -275,7 +275,7 @@ services:
 
     volumes:
       # ── Chat history, RAG docs, embeddings, settings (exportable) ─────────
-      - ${DATA_DIR:-/opt/olama}/webui:/app/backend/data
+      - ${DATA_DIR:-/opt/ollama}/webui:/app/backend/data
 
     # Falls back to wget if curl is not present in the image.
     healthcheck:
@@ -293,13 +293,13 @@ services:
         tag: "open-webui"
 
     networks:
-      - olama_net
+      - ollama_net
 
 # =============================================================================
 #  CATEGORY: SEARCH
 #  Purpose : Self-hosted search engine. Aggregates public search results and
 #            returns them to Open WebUI when the user toggles web search on.
-#            Never exposes a host port — reachable only inside olama_net.
+#            Never exposes a host port — reachable only inside ollama_net.
 #  Data    : ${DATA_DIR}/searxng — config only (settings.yml). Small but
 #            important to back up if you customise search engines or add
 #            custom categories.
@@ -310,14 +310,14 @@ services:
     image: searxng/searxng:latest
     pull_policy: if_not_present   # reuse existing container from a previous install
     platform: linux/amd64
-    container_name: olama-searxng
+    container_name: ollama-searxng
     restart: unless-stopped
 
     labels:
-      com.olama.category: "search"
-      com.olama.description: "SearXNG self-hosted search backend (internal only)"
-      com.olama.data: "${DATA_DIR:-/opt/olama}/searxng"
-      com.olama.log: "${DATA_DIR:-/opt/olama}/logs/searxng.log"
+      com.ollama.category: "search"
+      com.ollama.description: "SearXNG self-hosted search backend (internal only)"
+      com.ollama.data: "${DATA_DIR:-/opt/ollama}/searxng"
+      com.ollama.log: "${DATA_DIR:-/opt/ollama}/logs/searxng.log"
 
     # No host port — SearXNG is private to the Docker network
     environment:
@@ -333,7 +333,7 @@ services:
       # the repo so it is always present — even on a completely fresh DATA_DIR —
       # and SearXNG will never fail to start with a missing config error.
       # To customise search engines, edit docker/searxng/settings.yml.
-      - ${DATA_DIR:-/opt/olama}/searxng:/etc/searxng
+      - ${DATA_DIR:-/opt/ollama}/searxng:/etc/searxng
       - ./searxng/settings.yml:/etc/searxng/settings.yml:ro
 
     # SearXNG runs on Alpine (busybox wget, no curl by default).
@@ -352,7 +352,7 @@ services:
         tag: "searxng"
 
     networks:
-      - olama_net
+      - ollama_net
 
 # =============================================================================
 #  CATEGORY: PIPELINES
@@ -372,14 +372,14 @@ services:
     image: ghcr.io/open-webui/pipelines:main
     pull_policy: if_not_present   # reuse existing container from a previous install
     platform: linux/amd64
-    container_name: olama-pipelines
+    container_name: ollama-pipelines
     restart: unless-stopped
 
     labels:
-      com.olama.category: "pipelines"
-      com.olama.description: "Open WebUI function and tool runtime"
-      com.olama.data: "${DATA_DIR:-/opt/olama}/pipelines"
-      com.olama.log: "${DATA_DIR:-/opt/olama}/logs/pipelines.log"
+      com.ollama.category: "pipelines"
+      com.ollama.description: "Open WebUI function and tool runtime"
+      com.ollama.data: "${DATA_DIR:-/opt/ollama}/pipelines"
+      com.ollama.log: "${DATA_DIR:-/opt/ollama}/logs/pipelines.log"
 
     environment:
       # Key must match OPENAI_API_KEYS in open-webui — set both in docker/.env
@@ -389,7 +389,7 @@ services:
       # ── Pipeline scripts (exportable) ─────────────────────────────────────
       # Drop any .py pipeline file here to make it available in Open WebUI.
       # Built-in examples: https://github.com/open-webui/pipelines/tree/main/examples
-      - ${DATA_DIR:-/opt/olama}/pipelines:/app/pipelines
+      - ${DATA_DIR:-/opt/ollama}/pipelines:/app/pipelines
 
     # No host port — pipelines is private to the Docker network.
     # Open WebUI connects to it via http://pipelines:9099 (OPENAI_API_BASE_URLS).
@@ -409,7 +409,7 @@ services:
         tag: "pipelines"
 
     networks:
-      - olama_net
+      - ollama_net
 
 # =============================================================================
 #  CATEGORY: INTERFACE — MODEL MANAGER
@@ -419,7 +419,7 @@ services:
 #            delete models to reclaim disk space.
 #            Pulls any model from the Ollama registry — no CLI needed.
 #  Port    : 45214 → http://localhost:45214
-#  Data    : none (stateless proxy to the olama container)
+#  Data    : none (stateless proxy to the ollama container)
 # =============================================================================
 
   model-manager:
@@ -427,26 +427,26 @@ services:
     build:
       context: ./model-manager
       dockerfile: Dockerfile
-    image: olama-model-manager:latest
-    container_name: olama-model-manager
+    image: ollama-model-manager:latest
+    container_name: ollama-model-manager
     restart: unless-stopped
     depends_on:
-      olama:
+      ollama:
         condition: service_healthy
       uds-proxy:
         condition: service_healthy
 
     labels:
-      com.olama.category: "interface"
-      com.olama.description: "Ollama model search and download manager"
-      com.olama.data: "none"
-      com.olama.log: "${DATA_DIR:-/opt/olama}/logs/model-manager.log"
+      com.ollama.category: "interface"
+      com.ollama.description: "Ollama model search and download manager"
+      com.ollama.data: "none"
+      com.ollama.log: "${DATA_DIR:-/opt/ollama}/logs/model-manager.log"
 
     ports:
       - "${MODEL_MANAGER_PORT:-45214}:8080"
 
     environment:
-      - OLLAMA_BASE_URL=http://olama:11434
+      - OLLAMA_BASE_URL=http://ollama:11434
       - OLLAMA_SOCKET=/sockets/ollama.sock
       # Port only — the browser constructs the full URL using its own hostname,
       # so the "Open WebUI" link works whether you access via localhost, LAN IP,
@@ -454,7 +454,7 @@ services:
       - WEBUI_PORT=${WEBUI_PORT:-45213}
 
     volumes:
-      - olama_sockets:/sockets
+      - ollama_sockets:/sockets
 
     healthcheck:
       test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8080/')\""]
@@ -471,14 +471,14 @@ services:
         tag: "model-manager"
 
     networks:
-      - olama_net
+      - ollama_net
 
 # =============================================================================
 #  CATEGORY: AI CORE — UDS PROXY
 #  Purpose : Exposes Ollama's HTTP API over a Unix Domain Socket so that
 #            internal services (ghost-runner, model-manager) can connect
 #            without TCP stack overhead.  The socket file lives in the
-#            shared 'olama_sockets' named volume mounted by each consumer.
+#            shared 'ollama_sockets' named volume mounted by each consumer.
 #  Port    : none — communication is via /sockets/ollama.sock only
 # =============================================================================
 
@@ -486,26 +486,26 @@ services:
     build:
       context: ./uds-proxy
       dockerfile: Dockerfile
-    image: olama-uds-proxy:latest
-    container_name: olama-uds-proxy
+    image: ollama-uds-proxy:latest
+    container_name: ollama-uds-proxy
     restart: unless-stopped
     depends_on:
-      olama:
+      ollama:
         condition: service_healthy
 
     labels:
-      com.olama.category: "ai-core"
-      com.olama.description: "Unix Domain Socket proxy — Ollama API via /sockets/ollama.sock"
-      com.olama.data: "none"
-      com.olama.log: "none"
+      com.ollama.category: "ai-core"
+      com.ollama.description: "Unix Domain Socket proxy — Ollama API via /sockets/ollama.sock"
+      com.ollama.data: "none"
+      com.ollama.log: "none"
 
     environment:
       - SOCKET_PATH=/sockets/ollama.sock
-      - UPSTREAM_HOST=olama
+      - UPSTREAM_HOST=ollama
       - UPSTREAM_PORT=11434
 
     volumes:
-      - olama_sockets:/sockets
+      - ollama_sockets:/sockets
 
     # Healthy when the socket file exists and is a socket
     healthcheck:
@@ -523,7 +523,7 @@ services:
         tag: "uds-proxy"
 
     networks:
-      - olama_net
+      - ollama_net
 
 # =============================================================================
 #  CATEGORY: INTERFACE — MEMORY BROWSER
@@ -539,15 +539,15 @@ services:
     build:
       context: ./memory-browser
       dockerfile: Dockerfile
-    image: olama-memory-browser:latest
-    container_name: olama-memory-browser
+    image: ollama-memory-browser:latest
+    container_name: ollama-memory-browser
     restart: unless-stopped
 
     labels:
-      com.olama.category: "interface"
-      com.olama.description: "AI memory store — persistent facts with pin and CRUD UI"
-      com.olama.data: "${DATA_DIR:-/opt/olama}/memory"
-      com.olama.log: "${DATA_DIR:-/opt/olama}/logs/memory-browser.log"
+      com.ollama.category: "interface"
+      com.ollama.description: "AI memory store — persistent facts with pin and CRUD UI"
+      com.ollama.data: "${DATA_DIR:-/opt/ollama}/memory"
+      com.ollama.log: "${DATA_DIR:-/opt/ollama}/logs/memory-browser.log"
 
     ports:
       - "${MEMORY_PORT:-45216}:8080"
@@ -556,7 +556,7 @@ services:
       - DB_PATH=/data/memory.db
 
     volumes:
-      - ${DATA_DIR:-/opt/olama}/memory:/data
+      - ${DATA_DIR:-/opt/ollama}/memory:/data
 
     healthcheck:
       test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8080/')\""]
@@ -573,7 +573,7 @@ services:
         tag: "memory-browser"
 
     networks:
-      - olama_net
+      - ollama_net
 
 # =============================================================================
 #  CATEGORY: INTERFACE — FILE CATALOG
@@ -589,14 +589,14 @@ services:
     build:
       context: ./file-catalog
       dockerfile: Dockerfile
-    image: olama-file-catalog:latest
-    container_name: olama-file-catalog
+    image: ollama-file-catalog:latest
+    container_name: ollama-file-catalog
     restart: unless-stopped
 
     labels:
-      com.olama.category: "interface"
-      com.olama.description: "Large-file catalog — browse, move to external drive, symlink back"
-      com.olama.log: "${DATA_DIR:-/opt/olama}/logs/file-catalog.log"
+      com.ollama.category: "interface"
+      com.ollama.description: "Large-file catalog — browse, move to external drive, symlink back"
+      com.ollama.log: "${DATA_DIR:-/opt/ollama}/logs/file-catalog.log"
 
     ports:
       - "${FILE_CATALOG_PORT:-45217}:8080"
@@ -607,7 +607,7 @@ services:
       - MIN_SIZE_MB=${FILE_CATALOG_MIN_MB:-100}
 
     volumes:
-      - ${DATA_DIR:-/opt/olama}:/data
+      - ${DATA_DIR:-/opt/ollama}:/data
       - ${DRIVES_DIR:-/mnt}:/drives
 
     healthcheck:
@@ -625,7 +625,7 @@ services:
         tag: "file-catalog"
 
     networks:
-      - olama_net
+      - ollama_net
 
 # =============================================================================
 #  CATEGORY: INTERFACE — GHOST RUNNER
@@ -642,32 +642,32 @@ services:
     build:
       context: ./ghost-runner
       dockerfile: Dockerfile
-    image: olama-ghost-runner:latest
-    container_name: olama-ghost-runner
+    image: ollama-ghost-runner:latest
+    container_name: ollama-ghost-runner
     restart: unless-stopped
     depends_on:
-      olama:
+      ollama:
         condition: service_healthy
       uds-proxy:
         condition: service_healthy
 
     labels:
-      com.olama.category: "interface"
-      com.olama.description: "Ghost Runner — background AI task generation with resume"
-      com.olama.data: "${DATA_DIR:-/opt/olama}/ghost"
-      com.olama.log: "${DATA_DIR:-/opt/olama}/logs/ghost-runner.log"
+      com.ollama.category: "interface"
+      com.ollama.description: "Ghost Runner — background AI task generation with resume"
+      com.ollama.data: "${DATA_DIR:-/opt/ollama}/ghost"
+      com.ollama.log: "${DATA_DIR:-/opt/ollama}/logs/ghost-runner.log"
 
     ports:
       - "${GHOST_RUNNER_PORT:-45215}:8080"
 
     environment:
-      - OLLAMA_BASE_URL=http://olama:11434
+      - OLLAMA_BASE_URL=http://ollama:11434
       - OLLAMA_SOCKET=/sockets/ollama.sock
       - DB_PATH=/data/ghost.db
 
     volumes:
-      - ${DATA_DIR:-/opt/olama}/ghost:/data
-      - olama_sockets:/sockets
+      - ${DATA_DIR:-/opt/ollama}/ghost:/data
+      - ollama_sockets:/sockets
 
     healthcheck:
       test: ["CMD-SHELL", "python3 -c \"import urllib.request; urllib.request.urlopen('http://localhost:8080/')\""]
@@ -684,7 +684,7 @@ services:
         tag: "ghost-runner"
 
     networks:
-      - olama_net
+      - ollama_net
 
 # =============================================================================
 #  CATEGORY: INTERFACE — PORTAL
@@ -702,8 +702,8 @@ services:
     build:
       context: ./portal
       dockerfile: Dockerfile
-    image: olama-portal:latest
-    container_name: olama-portal
+    image: ollama-portal:latest
+    container_name: ollama-portal
     restart: unless-stopped
     # Portal is purely a static page — it can start before the services it
     # frames; the iframes show a spinner until each service responds.
@@ -715,10 +715,10 @@ services:
       - dozzle
 
     labels:
-      com.olama.category: "interface"
-      com.olama.description: "Unified portal — single entry point for Chat, Models, and Logs"
-      com.olama.data: "none"
-      com.olama.log: "none"
+      com.ollama.category: "interface"
+      com.ollama.description: "Unified portal — single entry point for Chat, Models, and Logs"
+      com.ollama.data: "none"
+      com.ollama.log: "none"
 
     ports:
       - "${PORTAL_PORT:-45200}:8080"
@@ -750,7 +750,7 @@ services:
         tag: "portal"
 
     networks:
-      - olama_net
+      - ollama_net
 
 # =============================================================================
 #  CATEGORY: LOGS
@@ -765,7 +765,7 @@ services:
     image: amir20/dozzle:latest
     pull_policy: if_not_present   # reuse existing container from a previous install
     platform: linux/amd64
-    container_name: olama-dozzle
+    container_name: ollama-dozzle
     restart: unless-stopped
     # Dozzle streams live logs from the Docker socket; it needs extra time to
     # close those streams cleanly on shutdown.  Without this, Docker sends
@@ -774,20 +774,20 @@ services:
     stop_grace_period: 30s
 
     labels:
-      com.olama.category: "logs"
-      com.olama.description: "Dozzle real-time web log viewer"
-      com.olama.data: "none"
-      com.olama.log: "none"
+      com.ollama.category: "logs"
+      com.ollama.description: "Dozzle real-time web log viewer"
+      com.ollama.data: "none"
+      com.ollama.log: "none"
 
     # Read-only access to Docker socket — Dozzle only reads logs, never writes
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
 
     environment:
-      # Show only this stack's containers (all have the com.olama.category label)
-      - DOZZLE_FILTER=label=com.olama.category
+      # Show only this stack's containers (all have the com.ollama.category label)
+      - DOZZLE_FILTER=label=com.ollama.category
       # Name shown in the Dozzle browser tab
-      - DOZZLE_HOSTNAME=olama
+      - DOZZLE_HOSTNAME=ollama
       - DOZZLE_NO_ANALYTICS=true
       # Minimum log level shown in the Dozzle UI.
       # info  → shows all normal operational messages (default)
@@ -814,22 +814,22 @@ services:
         tag: "dozzle"
 
     networks:
-      - olama_net
+      - ollama_net
 
 # =============================================================================
 #  NETWORK
 # =============================================================================
 
 networks:
-  olama_net:
+  ollama_net:
     driver: bridge
     labels:
-      com.olama.description: "Internal network — olama, open-webui, searxng, pipelines, dozzle"
+      com.ollama.description: "Internal network — ollama, open-webui, searxng, pipelines, dozzle"
 
 # Shared volume for the Unix Domain Socket file.
-# olama_sockets is mounted by uds-proxy (creates the socket) and by
+# ollama_sockets is mounted by uds-proxy (creates the socket) and by
 # ghost-runner and model-manager (connect to it).  The socket file is
 # recreated on each uds-proxy start so persistence is not required.
 volumes:
-  olama_sockets:
+  ollama_sockets:
     driver: local
