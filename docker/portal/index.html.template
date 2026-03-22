@@ -875,8 +875,8 @@ async function runHealthCheck() {
     if (serverData._err) {
       resultMap[svc.id] = {
         state: 'err',
-        detail: 'Model Manager unreachable',
-        diagnostic: `URL: ${healthUrl}\nError: ${serverData._err}`,
+        detail: 'Health proxy unreachable',
+        diagnostic: `Health proxy: ${healthUrl}\nProxy error:  ${serverData._err}\nNote: ${svc.name} status unknown \u2014 health API is down`,
         latency_ms: serverData._latency,
       };
     } else {
@@ -889,7 +889,7 @@ async function runHealthCheck() {
 
   // Log each service result
   if (serverData._err) {
-    addLog(`Model Manager unreachable \u00b7 ${serverData._err}`, 'err');
+    addLog(`Health proxy unreachable \u00b7 ${serverData._err}`, 'err');
   }
   for (const svc of SERVICES) {
     const r = resultMap[svc.id];
