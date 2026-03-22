@@ -253,7 +253,68 @@
     .status-badge.error       { background: rgba(248,113,113,.10); color: var(--red); }
     .status-badge.interrupted { background: rgba(96,165,250,.10); color: var(--blue); }
 
-    .detail-actions { display: flex; gap: .4rem; }
+    .detail-actions { display: flex; gap: .4rem; flex-wrap: wrap; }
+
+    /* ── Voice controls ──────────────────────────────────────── */
+    .btn-voice {
+      border-color: rgba(96,165,250,.3);
+      background: rgba(96,165,250,.07);
+      color: var(--blue);
+    }
+    .btn-voice:hover  { background: rgba(96,165,250,.14); }
+    .btn-voice.active {
+      background: rgba(96,165,250,.18);
+      border-color: rgba(96,165,250,.55);
+      color: #93c5fd;
+    }
+
+    .btn-mic {
+      border-color: rgba(248,113,113,.28);
+      background: rgba(248,113,113,.06);
+      color: var(--red);
+      padding: .38rem .55rem;
+    }
+    .btn-mic:hover    { background: rgba(248,113,113,.14); }
+    .btn-mic.active   {
+      background: rgba(248,113,113,.18);
+      border-color: rgba(248,113,113,.55);
+      animation: mic-pulse 1.1s ease-in-out infinite;
+    }
+    @keyframes mic-pulse { 50% { box-shadow: 0 0 8px rgba(248,113,113,.5); } }
+    .btn-mic svg { width: 13px; height: 13px; }
+
+    /* Prompt field wrapper (for mic button overlay) */
+    .prompt-wrap { position: relative; }
+    .prompt-wrap textarea { width: 100%; padding-right: 2.8rem; }
+    .prompt-mic {
+      position: absolute;
+      right: .5rem;
+      bottom: .5rem;
+      padding: .28rem;
+      border-radius: 5px;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--dim);
+      cursor: pointer;
+      transition: color .15s, background .15s;
+      display: flex;
+      align-items: center;
+    }
+    .prompt-mic svg { width: 15px; height: 15px; }
+    .prompt-mic:hover { color: var(--red); background: rgba(248,113,113,.08); }
+    .prompt-mic.active {
+      color: var(--red);
+      background: rgba(248,113,113,.14);
+      border-color: rgba(248,113,113,.4);
+      animation: mic-pulse 1.1s ease-in-out infinite;
+    }
+    .prompt-mic.hidden { display: none; }
+
+    .voice-hint {
+      font-size: .68rem;
+      color: var(--dim);
+      margin-top: -.2rem;
+    }
 
     .detail-body {
       flex: 1;
@@ -445,6 +506,15 @@
         <span class="detail-title" id="detail-model"></span>
         <span class="status-badge" id="detail-status-badge"></span>
         <div class="detail-actions">
+          <button class="btn btn-voice" id="btn-tts" onclick="toggleTTS()" title="Voice output: off">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            </svg>
+            Voice
+          </button>
           <button class="btn btn-ghost" id="btn-copy" onclick="copyOutput()" style="display:none">Copy</button>
           <button class="btn btn-ghost" id="btn-rerun" onclick="rerunTask()" style="display:none">Re-run</button>
           <button class="btn btn-danger" id="btn-delete" onclick="deleteActiveTask()">Delete</button>
@@ -475,7 +545,22 @@
     </div>
     <div class="field">
       <label for="prompt-input">Prompt</label>
-      <textarea id="prompt-input" placeholder="Enter your prompt here…" rows="6"></textarea>
+      <div class="prompt-wrap">
+        <textarea id="prompt-input" placeholder="Enter your prompt here…" rows="6"></textarea>
+        <button class="prompt-mic hidden" id="prompt-mic-btn" onclick="toggleMic()" title="Speak prompt"
+                type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8"  y1="23" x2="16" y2="23"/>
+          </svg>
+        </button>
+      </div>
+      <div class="voice-hint" id="voice-hint" style="display:none">
+        Click the mic to dictate — works in Chrome and Edge.
+      </div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
@@ -503,6 +588,7 @@ let rerunPrompt  = '';
 async function init() {
   await loadTasks();
   await loadModels();
+  initSTT();
   setInterval(loadTasks, 30000);
 }
 
@@ -653,6 +739,7 @@ function startStream(taskId, fromSeq) {
 
           if (msg.done) {
             removeCursor();
+            ttsFlush();   // speak any remaining buffered text
             const statusEl = document.getElementById('stream-status-bar');
             if (msg.status === 'complete') {
               statusEl.textContent = 'Complete';
@@ -670,6 +757,7 @@ function startStream(taskId, fromSeq) {
           }
 
           appendToken(msg.token);
+          ttsConsume(msg.token);
           lastSeq = msg.seq;
         }
       }
@@ -713,6 +801,7 @@ function cancelStream() {
     activeStream.abort();
     activeStream = null;
   }
+  ttsStop();
 }
 
 /* ───────────────────────────────────────────────────────────────
@@ -791,6 +880,7 @@ function openModal() {
 
 function closeModal() {
   document.getElementById('modal').classList.remove('open');
+  stopMic();
 }
 
 async function submitTask() {
@@ -835,10 +925,119 @@ function formatAge(ts) {
 }
 
 /* ───────────────────────────────────────────────────────────────
+   STT — Speech-to-Text (browser SpeechRecognition)
+─────────────────────────────────────────────────────────────── */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recognizer   = null;
+let isListening  = false;
+
+function initSTT() {
+  // Show mic button only if the browser supports SpeechRecognition
+  if (!SR) return;
+  const micBtn = document.getElementById('prompt-mic-btn');
+  const hint   = document.getElementById('voice-hint');
+  micBtn.classList.remove('hidden');
+  hint.style.display = '';
+}
+
+function toggleMic() {
+  if (!SR) return;
+  if (isListening) { recognizer.stop(); return; }
+
+  recognizer = new SR();
+  recognizer.continuous     = false;
+  recognizer.interimResults = true;
+  recognizer.lang           = navigator.language || 'en-US';
+
+  const micBtn = document.getElementById('prompt-mic-btn');
+  const input  = document.getElementById('prompt-input');
+
+  recognizer.onstart = () => {
+    isListening = true;
+    micBtn.classList.add('active');
+    micBtn.title = 'Listening… click to stop';
+  };
+
+  recognizer.onresult = (e) => {
+    const transcript = Array.from(e.results)
+      .map(r => r[0].transcript).join('');
+    input.value = transcript;
+  };
+
+  recognizer.onend = () => {
+    isListening = false;
+    micBtn.classList.remove('active');
+    micBtn.title = 'Speak prompt';
+  };
+
+  recognizer.onerror = (e) => {
+    isListening = false;
+    micBtn.classList.remove('active');
+    if (e.error !== 'aborted') console.warn('STT error:', e.error);
+  };
+
+  recognizer.start();
+}
+
+function stopMic() {
+  if (recognizer && isListening) recognizer.stop();
+}
+
+/* ───────────────────────────────────────────────────────────────
+   TTS — Text-to-Speech (browser speechSynthesis, sentence-buffered)
+─────────────────────────────────────────────────────────────── */
+let ttsEnabled = false;
+let ttsBuf     = '';   // accumulates tokens until a sentence boundary
+
+function toggleTTS() {
+  ttsEnabled = !ttsEnabled;
+  const btn = document.getElementById('btn-tts');
+  btn.classList.toggle('active', ttsEnabled);
+  btn.title = ttsEnabled ? 'Voice output: on (click to mute)' : 'Voice output: off';
+  if (!ttsEnabled) {
+    speechSynthesis.cancel();
+    ttsBuf = '';
+  }
+}
+
+// Called with each incoming token during streaming
+function ttsConsume(token) {
+  if (!ttsEnabled) return;
+  ttsBuf += token;
+  // Speak whenever we hit a sentence-ending punctuation followed by whitespace
+  // (or end of buffer on flush).
+  const m = ttsBuf.match(/^([\s\S]*?[.!?\n])\s+/);
+  if (m) {
+    speakNow(m[1].trim());
+    ttsBuf = ttsBuf.slice(m[0].length);
+  }
+}
+
+// Flush any remaining buffered text (called when stream ends)
+function ttsFlush() {
+  if (!ttsEnabled) { ttsBuf = ''; return; }
+  const text = ttsBuf.trim();
+  ttsBuf = '';
+  if (text) speakNow(text);
+}
+
+function speakNow(text) {
+  if (!text || !ttsEnabled) return;
+  const utt = new SpeechSynthesisUtterance(text);
+  utt.rate = 1.05;
+  speechSynthesis.speak(utt);
+}
+
+function ttsStop() {
+  speechSynthesis.cancel();
+  ttsBuf = '';
+}
+
+/* ───────────────────────────────────────────────────────────────
    Keyboard
 ─────────────────────────────────────────────────────────────── */
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') closeModal();
+  if (e.key === 'Escape') { closeModal(); stopMic(); }
   if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
     e.preventDefault();
     openModal();

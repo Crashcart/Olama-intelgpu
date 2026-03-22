@@ -212,6 +212,7 @@ async def stream_task(task_id: str, from_seq: int = 0):
 
     async def generate() -> AsyncGenerator[str, None]:
         seq = from_seq
+        last_heartbeat = time.monotonic()
         while True:
             async with aiosqlite.connect(DB_PATH) as db:
                 cur = await db.execute(
@@ -235,7 +236,13 @@ async def stream_task(task_id: str, from_seq: int = 0):
                 if status in ("complete", "error", "interrupted"):
                     yield f"data: {json.dumps({'done': True, 'status': status})}\n\n"
                     return
-                # Still generating — poll every 150 ms
+                # Still generating — poll every 150 ms.
+                # Send an SSE comment (heartbeat) every 15 s so nginx and any
+                # intermediate proxies don't close the idle connection.
+                now = time.monotonic()
+                if now - last_heartbeat > 15:
+                    yield ": heartbeat\n\n"
+                    last_heartbeat = now
                 await asyncio.sleep(0.15)
 
     return StreamingResponse(

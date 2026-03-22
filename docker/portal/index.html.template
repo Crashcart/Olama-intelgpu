@@ -592,7 +592,7 @@
 <div class="frames">
   <iframe id="frame-chat"   title="Open WebUI"></iframe>
   <iframe id="frame-models" title="Model Manager"></iframe>
-  <iframe id="frame-tasks"  title="Ghost Runner"></iframe>
+  <iframe id="frame-tasks"  title="Ghost Runner" allow="microphone"></iframe>
   <iframe id="frame-logs"   title="Dozzle Logs"></iframe>
 
   <!-- Crit Issues: inline panel, no iframe needed -->
