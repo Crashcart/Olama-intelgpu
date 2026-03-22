@@ -242,17 +242,22 @@ docker builder prune --all
 
 ## Upgrading Containers
 
-Use `scripts/update.sh` to pull fresh images for the UI services and fix the "Ollama is running" blank-page issue:
+Use `scripts/update.sh` to pull fresh images and rebuild local services:
 
 ```bash
-# Update open-webui and model-manager (most common)
+# Update open-webui, model-manager, and portal (most common)
 bash /opt/olama-stack/scripts/update.sh
 
 # Update every service including searxng, pipelines, dozzle
 bash /opt/olama-stack/scripts/update.sh --all
 ```
 
-The script pulls the latest images, rebuilds any locally-built containers, and recreates the affected containers. All data is preserved.
+The script:
+1. Pulls the latest registry images (`open-webui`, `searxng`, `pipelines`, `dozzle`)
+2. **Rebuilds locally-built images from source** (`model-manager`, `portal`) with `--pull --no-cache`
+3. Recreates the updated containers; all data is preserved
+
+> **Always include `portal` in updates.** The portal's diagnostic health-check page is baked into the image at build time. Running `update.sh` ensures it is always in sync with the current `model-manager` API.
 
 To upgrade the entire stack from scratch:
 
