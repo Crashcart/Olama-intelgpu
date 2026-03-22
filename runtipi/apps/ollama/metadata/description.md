@@ -1,4 +1,4 @@
-# Olama — Intel GPU Edition
+# Ollama — Intel GPU Edition
 
 Run large language models **locally** on your Intel GPU (Arc, Iris Xe, integrated graphics).
 
@@ -26,7 +26,7 @@ curl http://<your-server>:11434/api/pull \
 ### Pull via docker exec
 
 ```bash
-docker exec -it olama ollama pull llama3.2:1b
+docker exec -it ollama ollama pull llama3.2:1b
 ```
 
 ### Chat via API
@@ -58,6 +58,6 @@ curl http://<your-server>:11434/api/generate \
 
 Install **Open WebUI** from the Runtipi store and point it at:
 ```
-http://olama:11434
+http://ollama:11434
 ```
 (use the internal service name when both apps run on the same Runtipi instance)

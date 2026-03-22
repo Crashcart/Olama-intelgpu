@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# pull-model.sh — Download an LLM model into the running Olama container
+# pull-model.sh — Download an LLM model into the running Ollama container
 # Usage: bash pull-model.sh [MODEL_NAME]
 # Examples:
 #   bash pull-model.sh                  # interactive menu (default: mistral)
@@ -11,13 +11,13 @@ set -euo pipefail
 
 OLLAMA_PORT="${OLLAMA_PORT:-11434}"
 OLLAMA_API="http://localhost:${OLLAMA_PORT}"
-CONTAINER_NAME="olama"
+CONTAINER_NAME="ollama"
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
-info()    { echo -e "${CYAN}[olama]${NC} $*"; }
-success() { echo -e "${GREEN}[olama]${NC} $*"; }
-warn()    { echo -e "${YELLOW}[olama]${NC} $*"; }
-error()   { echo -e "${RED}[olama]${NC} $*" >&2; exit 1; }
+info()    { echo -e "${CYAN}[ollama]${NC} $*"; }
+success() { echo -e "${GREEN}[ollama]${NC} $*"; }
+warn()    { echo -e "${YELLOW}[ollama]${NC} $*"; }
+error()   { echo -e "${RED}[ollama]${NC} $*" >&2; exit 1; }
 
 # ── Popular models menu ───────────────────────────────────────────────────────
 show_menu() {
@@ -52,9 +52,9 @@ show_menu() {
   esac
 }
 
-# ── Check Olama is reachable ──────────────────────────────────────────────────
+# ── Check Ollama is reachable ──────────────────────────────────────────────────
 if ! curl -sf "${OLLAMA_API}/api/tags" &>/dev/null; then
-  error "Olama is not running at ${OLLAMA_API}. Start it first with install.sh"
+  error "Ollama is not running at ${OLLAMA_API}. Start it first with install.sh"
 fi
 
 # ── Determine model to pull ───────────────────────────────────────────────────

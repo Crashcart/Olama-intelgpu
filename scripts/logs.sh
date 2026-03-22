@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =============================================================================
-# logs.sh — Olama log viewer, exporter, and debug mode manager
+# logs.sh — Ollama log viewer, exporter, and debug mode manager
 #
 # Usage:
 #   bash scripts/logs.sh                      # live tail all containers
@@ -21,10 +21,10 @@
 #   UNKNOWN        — Other warnings not in either category
 #                    → Investigate if seen repeatedly after a healthy start
 #
-# Container names: olama | open-webui | searxng | pipelines | all (default)
+# Container names: ollama | open-webui | searxng | pipelines | all (default)
 #
 # Debug mode changes per container:
-#   olama      OLLAMA_DEBUG 0→1               GPU, model load, token traces
+#   ollama      OLLAMA_DEBUG 0→1               GPU, model load, token traces
 #   open-webui WEBUI_LOG_LEVEL INFO→DEBUG     every request, RAG, embed, search
 #   searxng    SEARXNG_DEBUG false→true       per-engine calls, ranking details
 #   pipelines  (always verbose — no separate debug flag)
@@ -67,16 +67,16 @@ _set_env() {
   fi
 }
 
-DATA_DIR="$(_read_env DATA_DIR /opt/olama)"
+DATA_DIR="$(_read_env DATA_DIR /opt/ollama)"
 DOZZLE_PORT="$(_read_env DOZZLE_PORT 9999)"
 LOG_DIR="${DATA_DIR}/logs"
-CONTAINERS=(olama open-webui searxng pipelines)
+CONTAINERS=(ollama open-webui searxng pipelines)
 # Maps compose service name → actual container_name (as set in docker-compose.yml)
 declare -A CNAME=(
-  [olama]="olama"
-  [open-webui]="olama-open-webui"
-  [searxng]="olama-searxng"
-  [pipelines]="olama-pipelines"
+  [ollama]="ollama"
+  [open-webui]="ollama-open-webui"
+  [searxng]="ollama-searxng"
+  [pipelines]="ollama-pipelines"
 )
 
 # ---------------------------------------------------------------------------
@@ -113,17 +113,17 @@ resolve_containers() {
 # status — health, categories, disk usage, and current debug state
 # ---------------------------------------------------------------------------
 cmd_status() {
-  bold "Olama Stack — Container Status"
+  bold "Ollama Stack — Container Status"
   sep
 
   declare -A CATEGORY=(
-    [olama]="AI CORE"
+    [ollama]="AI CORE"
     [open-webui]="INTERFACE"
     [searxng]="SEARCH"
     [pipelines]="PIPELINES"
   )
   declare -A DATA_PATH=(
-    [olama]="${DATA_DIR}/models"
+    [ollama]="${DATA_DIR}/models"
     [open-webui]="${DATA_DIR}/webui"
     [searxng]="${DATA_DIR}/searxng"
     [pipelines]="${DATA_DIR}/pipelines"
@@ -171,7 +171,7 @@ cmd_status() {
 
     # Per-container debug detail
     case "$c" in
-      olama)      printf '  log level : OLLAMA_DEBUG=%s\n'    "$ollama_debug" ;;
+      ollama)      printf '  log level : OLLAMA_DEBUG=%s\n'    "$ollama_debug" ;;
       open-webui) printf '  log level : WEBUI_LOG_LEVEL=%s\n' "$webui_log" ;;
       searxng)    printf '  log level : SEARXNG_DEBUG=%s\n'   "$searxng_debug" ;;
       pipelines)  printf '  log level : always verbose (no separate debug flag)\n' ;;
@@ -392,7 +392,7 @@ cmd_export() {
 
   local summary="${LOG_DIR}/export-summary.txt"
   {
-    echo "Olama Log Export"
+    echo "Ollama Log Export"
     echo "Generated  : $(date)"
     echo "DATA_DIR   : ${DATA_DIR}"
     echo "DEBUG_MODE : $(_read_env DEBUG_MODE false)"
@@ -446,7 +446,7 @@ cmd_debug_on() {
 
   # What each container now logs at DEBUG:
   bold "What you will see in debug mode:"
-  printf '  olama      : GPU device selection, model layer loading, KV cache,\n'
+  printf '  ollama      : GPU device selection, model layer loading, KV cache,\n'
   printf '               per-token generation timing, context window management\n'
   printf '  open-webui : every HTTP request/response, RAG document retrieval,\n'
   printf '               embedding API calls, web search queries and results,\n'
@@ -462,7 +462,7 @@ cmd_debug_on() {
   # Recreate containers so they pick up the new env vars
   info "Recreating containers with updated environment..."
   cd "$COMPOSE_DIR"
-  docker compose up -d --force-recreate olama open-webui searxng pipelines
+  docker compose up -d --force-recreate ollama open-webui searxng pipelines
   echo
   ok "Debug mode ON — follow logs with: bash scripts/logs.sh tail"
 }
@@ -501,7 +501,7 @@ cmd_debug_off() {
 
   info "Recreating containers with normal environment..."
   cd "$COMPOSE_DIR"
-  docker compose up -d --force-recreate olama open-webui searxng pipelines
+  docker compose up -d --force-recreate ollama open-webui searxng pipelines
   echo
   ok "Debug mode OFF — logs saved to ${LOG_DIR}/"
   info "Review debug logs: grep -iE 'error|warn' ${LOG_DIR}/*.log"
@@ -513,7 +513,7 @@ cmd_debug_off() {
 cmd_diagnose() {
   local lines="${1:-1000}"
 
-  bold "Olama Stack — Diagnostic Summary (last $lines lines per container)"
+  bold "Ollama Stack — Diagnostic Summary (last $lines lines per container)"
   sep
   printf '  Scanning for CRITICAL / SELF-RESOLVING / UNKNOWN issues...\n\n'
 
@@ -600,7 +600,7 @@ case "$CMD" in
   debug-on)  cmd_debug_on  ;;
   debug-off) cmd_debug_off ;;
   *)
-    bold "Olama log helper"
+    bold "Ollama log helper"
     echo
     echo "  bash scripts/logs.sh status                # health, categories, debug state"
     echo "  bash scripts/logs.sh tail [name]           # live follow logs (Ctrl-C to stop)"
@@ -612,8 +612,8 @@ case "$CMD" in
     echo "  bash scripts/logs.sh debug-on              # verbose logging, restart containers"
     echo "  bash scripts/logs.sh debug-off             # normal logging, export + restart"
     echo
-    echo "  name: olama | open-webui | searxng | pipelines | all (default: all)"
-    echo "  (these are compose service names; container names have the olama- prefix)"
+    echo "  name: ollama | open-webui | searxng | pipelines | all (default: all)"
+    echo "  (these are compose service names; container names have the ollama- prefix)"
     exit 1
     ;;
 esac

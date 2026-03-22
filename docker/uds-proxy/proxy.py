@@ -8,7 +8,7 @@ concurrently, so long-lived SSE streams work correctly.
 
 Environment:
   SOCKET_PATH    Path for the UDS file  (default: /sockets/ollama.sock)
-  UPSTREAM_HOST  TCP host to forward to (default: olama)
+  UPSTREAM_HOST  TCP host to forward to (default: ollama)
   UPSTREAM_PORT  TCP port to forward to (default: 11434)
 """
 
@@ -19,7 +19,7 @@ import signal
 import stat
 
 SOCKET_PATH    = os.environ.get("SOCKET_PATH",    "/sockets/ollama.sock")
-UPSTREAM_HOST  = os.environ.get("UPSTREAM_HOST",  "olama")
+UPSTREAM_HOST  = os.environ.get("UPSTREAM_HOST",  "ollama")
 UPSTREAM_PORT  = int(os.environ.get("UPSTREAM_PORT", "11434"))
 CHUNK          = 65536
 

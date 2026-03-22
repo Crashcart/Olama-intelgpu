@@ -1,4 +1,4 @@
-## Olama — Ollama LLM Stack for Intel GPUs
+## Ollama — Ollama LLM Stack for Intel GPUs
 
 A complete, self-hosted AI stack purpose-built for **Intel Arc, Iris Xe, and integrated Intel GPUs**. Chat with large language models in your browser with all the features you'd expect from a modern AI platform — without sending a single byte to the cloud.
 
@@ -6,7 +6,7 @@ A complete, self-hosted AI stack purpose-built for **Intel Arc, Iris Xe, and int
 
 | Container | Role |
 |---|---|
-| **Olama** | Ollama LLM engine with Intel GPU drivers (oneAPI/SYCL) pre-installed |
+| **Ollama** | Ollama LLM engine with Intel GPU drivers (oneAPI/SYCL) pre-installed |
 | **Open WebUI** | Browser-based chat interface at your configured port |
 | **SearXNG** | Private web search engine (internal, no exposed port) |
 | **Pipelines** | Python function/tool runtime for custom tools and code execution |
@@ -41,17 +41,17 @@ This app requires:
 - An Intel GPU visible at `/dev/dri` (Arc discrete, Iris Xe, or Intel integrated graphics)
 - The host kernel must have the Intel GPU driver loaded (`i915` or `xe`)
 
-The Olama container bundles Intel OpenCL and Level Zero drivers so the GPU is used automatically. If no Intel GPU is found, inference falls back to CPU.
+The Ollama container bundles Intel OpenCL and Level Zero drivers so the GPU is used automatically. If no Intel GPU is found, inference falls back to CPU.
 
 ### Pre-built image
 
-The Olama container uses a custom image with Intel GPU drivers. Before installing, build and push it:
+The Ollama container uses a custom image with Intel GPU drivers. Before installing, build and push it:
 
 ```bash
-git clone https://github.com/Crashcart/Olama-intelgpu.git
-cd Olama-intelgpu/docker
-docker build -t ghcr.io/crashcart/olama-intel-gpu:latest .
-docker push ghcr.io/crashcart/olama-intel-gpu:latest
+git clone https://github.com/Crashcart/Ollama-intelgpu.git
+cd Ollama-intelgpu/docker
+docker build -t ghcr.io/crashcart/ollama-intel-gpu:latest .
+docker push ghcr.io/crashcart/ollama-intel-gpu:latest
 ```
 
 Or use the pre-built image from the Crashcart GitHub Container Registry if available.
@@ -63,7 +63,7 @@ SearXNG requires a `settings.yml` before it will start. Copy it from the repo **
 ```bash
 # Replace <APP_DATA_DIR> with the path Runtipi shows for this app's data
 mkdir -p <APP_DATA_DIR>/data/searxng
-curl -fsSL https://raw.githubusercontent.com/Crashcart/Olama-intelgpu/main/docker/searxng/settings.yml \
+curl -fsSL https://raw.githubusercontent.com/Crashcart/Ollama-intelgpu/main/docker/searxng/settings.yml \
   -o <APP_DATA_DIR>/data/searxng/settings.yml
 ```
 

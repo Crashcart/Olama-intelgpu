@@ -1,7 +1,7 @@
 {
   "$schema": "../schema.json",
-  "name": "Olama — Intel GPU LLM Stack",
-  "id": "olama-intel-gpu",
+  "name": "Ollama — Intel GPU LLM Stack",
+  "id": "ollama-intel-gpu",
   "available": true,
   "short_desc": "Ollama LLM stack for Intel GPUs — Chat UI, web search, voice, RAG, pipelines",
   "author": "Crashcart",
@@ -13,8 +13,8 @@
   "no_gui": false,
   "exposable": true,
   "url_suffix": "/",
-  "source": "https://github.com/Crashcart/Olama-intelgpu",
-  "website": "https://github.com/Crashcart/Olama-intelgpu",
+  "source": "https://github.com/Crashcart/Ollama-intelgpu",
+  "website": "https://github.com/Crashcart/Ollama-intelgpu",
   "supported_architectures": ["amd64"],
   "form_fields": [
     {

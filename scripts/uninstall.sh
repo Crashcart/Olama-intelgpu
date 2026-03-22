@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 # =============================================================================
-# uninstall.sh — Remove the Olama Intel GPU stack
+# uninstall.sh — Remove the Ollama Intel GPU stack
 #
 # One-liner (mirrors install.sh — no local clone required):
-#   bash <(curl -fsSL https://raw.githubusercontent.com/Crashcart/Olama-intelgpu/main/scripts/uninstall.sh)
+#   bash <(curl -fsSL https://raw.githubusercontent.com/Crashcart/Ollama-intelgpu/main/scripts/uninstall.sh)
 #
 # From a local clone:
 #   bash scripts/uninstall.sh [OPTIONS]
 #
 # Options:
-#   --data-dir    DIR   Where data was stored (default: /opt/olama)
-#   --install-dir DIR   Where stack files were installed (default: /opt/olama-stack)
+#   --data-dir    DIR   Where data was stored (default: /opt/ollama)
+#   --install-dir DIR   Where stack files were installed (default: /opt/ollama-stack)
 #   --keep-data         Keep the data directory (models, history, config)
-#   --keep-images       Keep Docker images (default: remove all olama images)
+#   --keep-images       Keep Docker images (default: remove all ollama images)
 #   --yes / -y          Skip confirmation prompts
 # =============================================================================
 
@@ -21,13 +21,13 @@ set -euo pipefail
 # ── Survive terminal disconnect; capture all output ───────────────────────────
 trap '' HUP
 
-LOG_FILE="${LOG_FILE:-/tmp/olama-uninstall.log}"
-touch "$LOG_FILE" 2>/dev/null || LOG_FILE="/tmp/olama-uninstall-$(id -u).log"
+LOG_FILE="${LOG_FILE:-/tmp/ollama-uninstall.log}"
+touch "$LOG_FILE" 2>/dev/null || LOG_FILE="/tmp/ollama-uninstall-$(id -u).log"
 exec > >(tee -a "$LOG_FILE") 2>&1
 
 # ── Defaults ──────────────────────────────────────────────────────────────────
-DATA_DIR="${DATA_DIR:-/opt/olama}"
-INSTALL_DIR="${INSTALL_DIR:-/opt/olama-stack}"
+DATA_DIR="${DATA_DIR:-/opt/ollama}"
+INSTALL_DIR="${INSTALL_DIR:-/opt/ollama-stack}"
 PORTAL_PORT="${PORTAL_PORT:-45200}"
 WEBUI_PORT="${WEBUI_PORT:-45213}"
 MODEL_MANAGER_PORT="${MODEL_MANAGER_PORT:-45214}"
@@ -40,10 +40,10 @@ YES=false
 
 # ── Color helpers ──────────────────────────────────────────────────────────────
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
-info()    { echo -e "${CYAN}[olama]${NC} $*"; }
-success() { echo -e "${GREEN}[olama]${NC} $*"; }
-warn()    { echo -e "${YELLOW}[olama]${NC} $*"; }
-error()   { echo -e "${RED}[olama]${NC} $*" >&2; echo -e "${RED}[olama]${NC} Full log: ${LOG_FILE}" >&2; exit 1; }
+info()    { echo -e "${CYAN}[ollama]${NC} $*"; }
+success() { echo -e "${GREEN}[ollama]${NC} $*"; }
+warn()    { echo -e "${YELLOW}[ollama]${NC} $*"; }
+error()   { echo -e "${RED}[ollama]${NC} $*" >&2; echo -e "${RED}[ollama]${NC} Full log: ${LOG_FILE}" >&2; exit 1; }
 sep()     { echo "──────────────────────────────────────────────────────"; }
 
 # ── Argument parsing ───────────────────────────────────────────────────────────
@@ -58,10 +58,10 @@ while [[ $# -gt 0 ]]; do
     --help|-h)
       echo "Usage: $0 [--data-dir DIR] [--install-dir DIR] [--keep-data] [--keep-images] [--yes]"
       echo
-      echo "  --data-dir    DIR   Where data is stored   (default: /opt/olama)"
-      echo "  --install-dir DIR   Where stack files live (default: /opt/olama-stack)"
+      echo "  --data-dir    DIR   Where data is stored   (default: /opt/ollama)"
+      echo "  --install-dir DIR   Where stack files live (default: /opt/ollama-stack)"
       echo "  --keep-data         Keep the data directory (models, history, config)"
-      echo "  --keep-images       Keep Docker images     (default: remove all olama images)"
+      echo "  --keep-images       Keep Docker images     (default: remove all ollama images)"
       echo "  --yes / -y          Skip confirmation prompts"
       exit 0 ;;
     *) warn "Unknown option: $1"; shift ;;
@@ -113,47 +113,47 @@ for _try in \
 done
 
 # ── Inventory what will be removed ────────────────────────────────────────────
-_olama_imgs=()
+_ollama_imgs=()
 while IFS= read -r _img; do
-  [[ -n "$_img" ]] && _olama_imgs+=("$_img")
+  [[ -n "$_img" ]] && _ollama_imgs+=("$_img")
 done < <(docker images --format "{{.Repository}}:{{.Tag}}" 2>/dev/null \
-  | grep -E "^(olama|olama-model-manager|olama-portal):" || true)
+  | grep -E "^(ollama|ollama-model-manager|ollama-portal):" || true)
 
-_olama_vols=()
+_ollama_vols=()
 while IFS= read -r _vol; do
-  [[ -n "$_vol" ]] && _olama_vols+=("$_vol")
-done < <(docker volume ls -q --filter "name=olama" 2>/dev/null || true)
+  [[ -n "$_vol" ]] && _ollama_vols+=("$_vol")
+done < <(docker volume ls -q --filter "name=ollama" 2>/dev/null || true)
 
-_olama_nets=()
+_ollama_nets=()
 while IFS= read -r _net; do
-  [[ -n "$_net" ]] && _olama_nets+=("$_net")
+  [[ -n "$_net" ]] && _ollama_nets+=("$_net")
 done < <(docker network ls --format "{{.Name}}" 2>/dev/null \
-  | grep -E "^(olama|docker_default$)" || true)
+  | grep -E "^(ollama|docker_default$)" || true)
 
 # ── Show what will happen ──────────────────────────────────────────────────────
 sep
-echo -e "${BOLD}Olama Stack — Uninstaller${NC}"
+echo -e "${BOLD}Ollama Stack — Uninstaller${NC}"
 sep
 echo
 echo "  Uninstall log: ${LOG_FILE}"
 echo "     → tail -f ${LOG_FILE}  (safe to close terminal)"
 echo
 echo "  This will:"
-echo "    • Stop and remove all 7 Olama containers"
+echo "    • Stop and remove all 7 Ollama containers"
 
 if ! $KEEP_IMAGES; then
-  if [[ ${#_olama_imgs[@]} -gt 0 ]]; then
+  if [[ ${#_ollama_imgs[@]} -gt 0 ]]; then
     echo "    • Remove Docker images:"
-    for _i in "${_olama_imgs[@]}"; do echo "        - ${_i}"; done
+    for _i in "${_ollama_imgs[@]}"; do echo "        - ${_i}"; done
   else
     echo "    • Remove Docker images  (none found — already clean)"
   fi
 fi
 
-[[ ${#_olama_vols[@]} -gt 0 ]] && \
-  echo "    • Remove Docker volumes: ${_olama_vols[*]}"
-[[ ${#_olama_nets[@]} -gt 0 ]] && \
-  echo "    • Remove Docker networks: ${_olama_nets[*]}"
+[[ ${#_ollama_vols[@]} -gt 0 ]] && \
+  echo "    • Remove Docker volumes: ${_ollama_vols[*]}"
+[[ ${#_ollama_nets[@]} -gt 0 ]] && \
+  echo "    • Remove Docker networks: ${_ollama_nets[*]}"
 
 echo "    • Remove firewall rules added by the installer"
 [[ -d "$INSTALL_DIR" ]] && echo "    • Delete stack files at ${INSTALL_DIR}"
@@ -197,7 +197,7 @@ fi
 
 # ── Stop and remove containers + volumes ──────────────────────────────────────
 sep
-info "Stopping and removing Olama containers..."
+info "Stopping and removing Ollama containers..."
 
 if [[ -n "$COMPOSE_CMD" && -n "$COMPOSE_FILE" ]]; then
   info "Using compose file: ${COMPOSE_FILE}"
@@ -211,8 +211,8 @@ if [[ -n "$COMPOSE_CMD" && -n "$COMPOSE_FILE" ]]; then
 else
   warn "Compose file not found — stopping containers by name..."
   _any_removed=false
-  for cname in olama olama-open-webui olama-model-manager olama-portal \
-                olama-searxng olama-pipelines olama-dozzle; do
+  for cname in ollama ollama-open-webui ollama-model-manager ollama-portal \
+                ollama-searxng ollama-pipelines ollama-dozzle; do
     if docker inspect "$cname" &>/dev/null 2>&1; then
       docker stop "$cname" 2>/dev/null || true
       docker rm   "$cname" 2>/dev/null || true
@@ -225,7 +225,7 @@ else
     || info "No running containers found — already clean."
 
   # Remove networks in fallback path
-  for _net in olama_default docker_default; do
+  for _net in ollama_default docker_default; do
     if docker network inspect "$_net" &>/dev/null 2>&1; then
       docker network rm "$_net" 2>/dev/null \
         && info "  Removed network: ${_net}" || true
@@ -235,12 +235,12 @@ fi
 
 # ── Remove any remaining Docker volumes ───────────────────────────────────────
 # Re-query after compose down — compose may have created volumes under a
-# project-prefixed name (e.g. docker_olama_sockets) that weren't in the
+# project-prefixed name (e.g. docker_ollama_sockets) that weren't in the
 # pre-run snapshot.
 _remaining_vols=()
 while IFS= read -r _vol; do
   [[ -n "$_vol" ]] && _remaining_vols+=("$_vol")
-done < <(docker volume ls -q 2>/dev/null | grep -E "(^|_)olama" || true)
+done < <(docker volume ls -q 2>/dev/null | grep -E "(^|_)ollama" || true)
 
 if [[ ${#_remaining_vols[@]} -gt 0 ]]; then
   sep
@@ -268,7 +268,7 @@ if ! $KEEP_IMAGES; then
   while IFS= read -r _img; do
     [[ -n "$_img" ]] && _imgs_to_remove+=("$_img")
   done < <(docker images --format "{{.Repository}}:{{.Tag}}" 2>/dev/null \
-    | grep -E "^(olama|olama-model-manager|olama-portal):" || true)
+    | grep -E "^(ollama|ollama-model-manager|ollama-portal):" || true)
 
   _imgs_removed=()
   for img in "${_imgs_to_remove[@]}"; do
@@ -294,9 +294,9 @@ if ! $KEEP_IMAGES; then
   info "To remove them: docker rmi ghcr.io/open-webui/open-webui:main ghcr.io/open-webui/pipelines:main searxng/searxng:latest amir20/dozzle:latest"
 fi
 
-# ── Remove remaining olama networks ───────────────────────────────────────────
+# ── Remove remaining ollama networks ───────────────────────────────────────────
 _remaining_nets=$(docker network ls --format "{{.Name}}" 2>/dev/null \
-  | grep -E "^olama" || true)
+  | grep -E "^ollama" || true)
 if [[ -n "$_remaining_nets" ]]; then
   sep
   info "Removing remaining Docker networks..."
@@ -326,7 +326,7 @@ mapfile -t _ALLOW_FROM_CIDRS < <(_parse_cidrs "${ALLOW_FROM:-any}")
 [[ ${#_ALLOW_FROM_CIDRS[@]} -eq 0 ]] && _ALLOW_FROM_CIDRS=("any")
 
 if command -v ufw &>/dev/null && ufw status 2>/dev/null | grep -q "Status: active"; then
-  info "ufw is active — removing olama rules..."
+  info "ufw is active — removing ollama rules..."
 
   for i in "${!_fw_ports[@]}"; do
     p="${_fw_ports[$i]}"
@@ -353,10 +353,10 @@ if command -v ufw &>/dev/null && ufw status 2>/dev/null | grep -q "Status: activ
 
   [[ ${#_fw_removed[@]} -gt 0 ]] \
     && success "ufw: removed rules for: ${_fw_removed[*]}" \
-    || info "ufw: no olama rules found — already clean."
+    || info "ufw: no ollama rules found — already clean."
 
 elif command -v firewall-cmd &>/dev/null && firewall-cmd --state 2>/dev/null | grep -q "running"; then
-  info "firewalld is active — removing olama rules..."
+  info "firewalld is active — removing ollama rules..."
 
   for i in "${!_fw_ports[@]}"; do
     p="${_fw_ports[$i]}"
@@ -383,7 +383,7 @@ elif command -v firewall-cmd &>/dev/null && firewall-cmd --state 2>/dev/null | g
   [[ ${#_fw_removed[@]} -gt 0 ]] && firewall-cmd --reload >/dev/null
   [[ ${#_fw_removed[@]} -gt 0 ]] \
     && success "firewalld: removed rules for: ${_fw_removed[*]}" \
-    || info "firewalld: no olama rules found — already clean."
+    || info "firewalld: no ollama rules found — already clean."
 
 else
   info "No active ufw or firewalld detected — skipping firewall step."
@@ -392,7 +392,7 @@ fi
 # ── Remove install directory ───────────────────────────────────────────────────
 sep
 if [[ -d "$INSTALL_DIR" ]]; then
-  # Use path-aware overlap check (require / boundary — /opt/olama-stack must not match /opt/olama)
+  # Use path-aware overlap check (require / boundary — /opt/ollama-stack must not match /opt/ollama)
   _inst_real="$(realpath -m "$INSTALL_DIR")"
   _data_real="$(realpath -m "$DATA_DIR")"
   if [[ "$_inst_real" == "$_data_real" || \
@@ -423,7 +423,7 @@ fi
 
 # ── Done ──────────────────────────────────────────────────────────────────────
 sep
-success "Olama stack has been uninstalled."
+success "Ollama stack has been uninstalled."
 echo
 
 if ! $PURGE_DATA && [[ -d "$DATA_DIR" ]]; then
@@ -435,7 +435,7 @@ if ! $PURGE_DATA && [[ -d "$DATA_DIR" ]]; then
   echo    "    └── memory/     — AI memory store"
   echo
   echo    "  To delete it now:  sudo rm -rf ${DATA_DIR}"
-  echo    "  To reinstall:      bash <(curl -fsSL https://raw.githubusercontent.com/Crashcart/Olama-intelgpu/main/scripts/install.sh)"
+  echo    "  To reinstall:      bash <(curl -fsSL https://raw.githubusercontent.com/Crashcart/Ollama-intelgpu/main/scripts/install.sh)"
   echo
 fi
 

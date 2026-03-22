@@ -1,12 +1,12 @@
 {
-  "name": "Olama (Intel GPU)",
-  "id": "olama",
+  "name": "Ollama (Intel GPU)",
+  "id": "ollama",
   "available": true,
   "short_desc": "Run large language models locally using your Intel GPU",
   "author": "Ollama",
   "port": 11434,
   "categories": ["ai", "utilities"],
-  "description": "Olama lets you run large language models (LLMs) locally on your own hardware. This version is optimized for Intel GPUs (Arc, Iris Xe, integrated graphics) using Intel's oneAPI compute runtime. Mistral is pulled automatically on first start as the default well-rounded model. Supports the OpenAI-compatible API.",
+  "description": "Ollama lets you run large language models (LLMs) locally on your own hardware. This version is optimized for Intel GPUs (Arc, Iris Xe, integrated graphics) using Intel's oneAPI compute runtime. Mistral is pulled automatically on first start as the default well-rounded model. Supports the OpenAI-compatible API.",
   "tipi_version": 1,
   "version": "latest",
   "source": "https://github.com/ollama/ollama",
@@ -37,9 +37,9 @@
       "type": "text",
       "label": "Models storage path",
       "hint": "Host path to persist downloaded models. Defaults to Runtipi app data directory.",
-      "placeholder": "/runtipi/app-data/olama/models",
+      "placeholder": "/runtipi/app-data/ollama/models",
       "env_variable": "OLLAMA_MODELS_PATH",
-      "default": "/runtipi/app-data/olama/models",
+      "default": "/runtipi/app-data/ollama/models",
       "required": false
     }
   ]

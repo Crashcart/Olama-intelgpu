@@ -1,4 +1,4 @@
-# Olama — Intel GPU Docker
+# Ollama — Intel GPU Docker
 
 Run [Ollama](https://ollama.com) in Docker with Intel GPU acceleration.
 Supports **Intel Arc**, **Iris Xe**, and **integrated Intel graphics** via Intel's oneAPI runtime.
@@ -11,15 +11,15 @@ Supports **Intel Arc**, **Iris Xe**, and **integrated Intel graphics** via Intel
 
 | Container | Service | Purpose | Port |
 |---|---|---|---|
-| `olama-portal` | `portal` | **Unified web portal** — Chat, Models, and Logs in one tab | `45200` |
-| `olama` | `olama` | Ollama LLM engine — Intel GPU passthrough | `11434` |
-| `olama-open-webui` | `open-webui` | Browser chat UI | `45213` |
-| `olama-model-manager` | `model-manager` | Model search, download, and delete UI | `45214` |
-| `olama-searxng` | `searxng` | Self-hosted web search backend | internal |
-| `olama-pipelines` | `pipelines` | Python tool/function runtime for Open WebUI | internal |
-| `olama-dozzle` | `dozzle` | Real-time web log viewer for all containers | `9999` |
+| `ollama-portal` | `portal` | **Unified web portal** — Chat, Models, and Logs in one tab | `45200` |
+| `ollama` | `ollama` | Ollama LLM engine — Intel GPU passthrough | `11434` |
+| `ollama-open-webui` | `open-webui` | Browser chat UI | `45213` |
+| `ollama-model-manager` | `model-manager` | Model search, download, and delete UI | `45214` |
+| `ollama-searxng` | `searxng` | Self-hosted web search backend | internal |
+| `ollama-pipelines` | `pipelines` | Python tool/function runtime for Open WebUI | internal |
+| `ollama-dozzle` | `dozzle` | Real-time web log viewer for all containers | `9999` |
 
-All containers carry the `olama-` prefix so they are easy to identify in `docker ps` alongside other stacks.
+All containers carry the `ollama-` prefix so they are easy to identify in `docker ps` alongside other stacks.
 
 **The portal is the recommended bookmark.** Open `http://localhost:45200` once and you can reach Chat, Models, and Logs from the top nav without switching tabs or ports. Each service is still accessible directly on its own port if you prefer.
 
@@ -48,15 +48,15 @@ The fastest way to get the full stack running. Clones the repo, installs Docker 
 **Step 1 — Run the installer**
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/Crashcart/Olama-intelgpu/main/scripts/install.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/Crashcart/Ollama-intelgpu/main/scripts/install.sh)
 ```
 
 The installer will:
 
 1. Install Docker and Docker Compose if they are not already present
 2. Warn if no Intel GPU render node (`/dev/dri/renderD*`) is found
-3. Clone the repo to `/opt/olama-stack/`
-4. Create data directories under `/opt/olama/`
+3. Clone the repo to `/opt/ollama-stack/`
+4. Create data directories under `/opt/ollama/`
 5. Write `docker/.env` (or update it if one already exists)
 6. **Check all 5 ports for conflicts** — if any port is already in use by another process, print what is using it and ask for an alternative before continuing
 7. Open the host-facing ports in ufw or firewalld for LAN access
@@ -67,10 +67,10 @@ The installer will:
 
 The installer is **idempotent** — safe to re-run after an upgrade or a failed run. It updates ports and GPU group IDs in an existing `.env` without touching your custom settings (API keys, model names, feature flags, etc.).
 
-**The installer survives SSH disconnects.** All output is also logged to `/tmp/olama-install.log`:
+**The installer survives SSH disconnects.** All output is also logged to `/tmp/ollama-install.log`:
 
 ```bash
-tail -f /tmp/olama-install.log
+tail -f /tmp/ollama-install.log
 ```
 
 **Step 2 — Download a model**
@@ -85,11 +85,11 @@ Or from the CLI:
 
 ```bash
 # Interactive menu
-bash /opt/olama-stack/scripts/pull-model.sh
+bash /opt/ollama-stack/scripts/pull-model.sh
 
 # Or pull directly
-docker exec olama ollama pull mistral
-docker exec olama ollama pull llama3.2:3b
+docker exec ollama ollama pull mistral
+docker exec ollama ollama pull llama3.2:3b
 ```
 
 **Step 3 — Open the portal**
@@ -125,12 +125,12 @@ The stack binds to `0.0.0.0` so it is reachable on **all network interfaces and 
 ## Installer Options
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/Crashcart/Olama-intelgpu/main/scripts/install.sh) [OPTIONS]
+bash <(curl -fsSL https://raw.githubusercontent.com/Crashcart/Ollama-intelgpu/main/scripts/install.sh) [OPTIONS]
 ```
 
 | Flag | Default | Purpose |
 |---|---|---|
-| `--data-dir DIR` | `/opt/olama` | Where to store models, chat history, logs |
+| `--data-dir DIR` | `/opt/ollama` | Where to store models, chat history, logs |
 | `--port PORT` | `11434` | Host port for the Ollama API |
 | `--webui-port PORT` | `45213` | Host port for the Open WebUI chat UI |
 | `--version TAG` | `latest` | Ollama image tag |
@@ -150,7 +150,7 @@ bash <(curl -fsSL .../install.sh) --allow-from 192.168.1.0/24,10.5.0.0/16
 bash <(curl -fsSL .../install.sh) \
   --port 11434 \
   --webui-port 45213 \
-  --data-dir /mnt/nas/olama
+  --data-dir /mnt/nas/ollama
 ```
 
 **Example — force-recreate all containers to pick up latest images:**
@@ -182,7 +182,7 @@ The stack is designed to work across subnets out of the box:
   OLLAMA_ORIGINS=http://localhost,https://localhost,http://127.0.0.1,http://192.168.,http://10.,http://172.,http://100.
   ```
 
-  Then restart: `docker compose -f /opt/olama-stack/docker/docker-compose.yml restart olama`
+  Then restart: `docker compose -f /opt/ollama-stack/docker/docker-compose.yml restart ollama`
 
 - **ZeroTier** — ZeroTier creates a virtual network interface (e.g. `ztXXXXXX`). The stack binds to `0.0.0.0` so it listens on that interface automatically. The only thing to do is use the ZeroTier-assigned IP address instead of the `.local` mDNS hostname, because mDNS does not traverse ZeroTier:
 
@@ -215,8 +215,8 @@ The stack is designed to work across subnets out of the box:
 **Step 1 — Clone the repository**
 
 ```bash
-git clone https://github.com/Crashcart/Olama-intelgpu.git
-cd Olama-intelgpu
+git clone https://github.com/Crashcart/Ollama-intelgpu.git
+cd Ollama-intelgpu
 ```
 
 **Step 2 — Configure environment**
@@ -228,7 +228,7 @@ cp .env.example docker/.env
 Open `docker/.env` and set `DATA_DIR` to wherever you have enough space:
 
 ```env
-DATA_DIR=/opt/olama
+DATA_DIR=/opt/ollama
 OLLAMA_PORT=11434
 WEBUI_PORT=45213
 ```
@@ -244,7 +244,7 @@ mkdir -p ${DATA_DIR}/{models,webui,searxng,pipelines,logs}
 ```bash
 cd docker
 
-# First run: builds the Olama image and starts all containers
+# First run: builds the Ollama image and starts all containers
 docker compose up --build -d
 
 # Subsequent starts (image already built):
@@ -254,7 +254,7 @@ docker compose up -d --no-recreate
 **Step 4 — Pull a model**
 
 ```bash
-docker exec olama ollama pull mistral
+docker exec ollama ollama pull mistral
 # or use the helper
 bash scripts/pull-model.sh
 ```
@@ -271,29 +271,29 @@ Use `scripts/uninstall.sh` to stop and remove the stack. Your data is kept by de
 
 ```bash
 # Stop and remove containers, images, volumes, networks; keep data
-bash /opt/olama-stack/scripts/uninstall.sh
+bash /opt/ollama-stack/scripts/uninstall.sh
 
 # Also delete all models, chat history, and config (irreversible)
-bash /opt/olama-stack/scripts/uninstall.sh --purge
+bash /opt/ollama-stack/scripts/uninstall.sh --purge
 
 # Uninstall from a machine where the repo was never cloned (one-liner)
-bash <(curl -fsSL https://raw.githubusercontent.com/Crashcart/Olama-intelgpu/main/scripts/uninstall.sh)
+bash <(curl -fsSL https://raw.githubusercontent.com/Crashcart/Ollama-intelgpu/main/scripts/uninstall.sh)
 ```
 
 **Options:**
 
 | Flag | Default | Purpose |
 |---|---|---|
-| `--data-dir DIR` | `/opt/olama` | Where data is stored |
-| `--install-dir DIR` | `/opt/olama-stack` | Where stack files are installed |
+| `--data-dir DIR` | `/opt/ollama` | Where data is stored |
+| `--install-dir DIR` | `/opt/ollama-stack` | Where stack files are installed |
 | `--purge` | off | Also delete the data directory (models, history, config) |
-| `--keep-images` | off | Keep Docker images (default: remove all olama images) |
+| `--keep-images` | off | Keep Docker images (default: remove all ollama images) |
 | `--yes` / `-y` | off | Skip confirmation prompts |
 
 The script:
 1. Shows a full list of what will be removed (containers, images, volumes, networks) before asking
-2. Stops and removes all 7 Olama containers (`docker compose down --volumes --remove-orphans`)
-3. Removes **all** locally-built images across every tag — `olama:latest`, `olama:0.6.2`, etc.
+2. Stops and removes all 7 Ollama containers (`docker compose down --volumes --remove-orphans`)
+3. Removes **all** locally-built images across every tag — `ollama:latest`, `ollama:0.6.2`, etc.
 4. Removes any Docker volumes and networks belonging to the stack
 5. Removes dangling build layers left over from `docker compose build`
 6. Removes firewall rules the installer added
@@ -315,10 +315,10 @@ Use `scripts/update.sh` to pull fresh images and rebuild local services:
 
 ```bash
 # Update open-webui, model-manager, and portal (most common)
-bash /opt/olama-stack/scripts/update.sh
+bash /opt/ollama-stack/scripts/update.sh
 
 # Update every service including searxng, pipelines, dozzle
-bash /opt/olama-stack/scripts/update.sh --all
+bash /opt/ollama-stack/scripts/update.sh --all
 ```
 
 The script:
@@ -331,7 +331,7 @@ The script:
 To upgrade the entire stack from scratch:
 
 ```bash
-bash /opt/olama-stack/scripts/install.sh --recreate
+bash /opt/ollama-stack/scripts/install.sh --recreate
 ```
 
 **Fixing the "Ollama is running" blank page in Open WebUI:**
@@ -339,7 +339,7 @@ bash /opt/olama-stack/scripts/install.sh --recreate
 This happens when the cached `open-webui` image is stale. Run:
 
 ```bash
-bash /opt/olama-stack/scripts/update.sh
+bash /opt/ollama-stack/scripts/update.sh
 ```
 
 ---
@@ -360,7 +360,7 @@ ${DATA_DIR}/
 **Backup:**
 
 ```bash
-rsync -av --progress ${DATA_DIR}/ /mnt/backup/olama/
+rsync -av --progress ${DATA_DIR}/ /mnt/backup/ollama/
 ```
 
 **Move to a new machine:**
@@ -381,12 +381,12 @@ bash scripts/logs.sh status
 bash scripts/logs.sh tail
 
 # Live tail a single container
-bash scripts/logs.sh tail olama
+bash scripts/logs.sh tail ollama
 bash scripts/logs.sh tail open-webui
 
 # Show recent logs (last 100 lines)
 bash scripts/logs.sh show
-bash scripts/logs.sh show olama 200
+bash scripts/logs.sh show ollama 200
 
 # Show only ERROR / WARN / CRITICAL lines
 bash scripts/logs.sh errors
@@ -410,10 +410,10 @@ Open **http://localhost:9999** for the Dozzle web log viewer — real-time, colo
 sudo intel_gpu_top
 
 # Verify OpenCL device is visible inside the container
-docker exec olama clinfo | grep -i "device name"
+docker exec ollama clinfo | grep -i "device name"
 
 # Run a quick inference
-docker exec olama ollama run mistral "hello"
+docker exec ollama ollama run mistral "hello"
 ```
 
 ---
@@ -424,7 +424,7 @@ The **portal** at `http://localhost:45200` is a lightweight nginx container that
 
 ```
 ┌───────────────────────────────────────────────────────────────┐
-│  Olama Stack  [ Chat ]  [ Models ]  [ Logs ]  [⚠ Crit Issues] │  ← 48 px dark nav bar
+│  Ollama Stack  [ Chat ]  [ Models ]  [ Logs ]  [⚠ Crit Issues] │  ← 48 px dark nav bar
 ├───────────────────────────────────────────────────────────────┤
 │                                                               │
 │   Active service displayed here via iframe                    │
@@ -493,7 +493,7 @@ You (toggle ON) → Open WebUI → SearXNG → Public search engines
                                     ↓
                           Results returned to Open WebUI
                                     ↓
-                    Open WebUI sends results + question → Olama
+                    Open WebUI sends results + question → Ollama
                                     ↓
                               AI answers you
 ```
@@ -510,17 +510,17 @@ You (toggle ON) → Open WebUI → SearXNG → Public search engines
 
 1. In Runtipi settings → **App Stores**, add:
    ```
-   https://github.com/Crashcart/Olama-intelgpu
+   https://github.com/Crashcart/Ollama-intelgpu
    ```
-2. **Olama (Intel GPU)** will appear in your store.
+2. **Ollama (Intel GPU)** will appear in your store.
 3. Install it, then pull a model:
    ```bash
-   docker exec olama ollama pull mistral
+   docker exec ollama ollama pull mistral
    ```
 
 ### Option B — Copy files manually
 
-Copy `runtipi/apps/olama-intel-gpu/` into your Runtipi `apps/` directory and refresh the store.
+Copy `runtipi/apps/ollama-intel-gpu/` into your Runtipi `apps/` directory and refresh the store.
 
 > **Before clicking Install:** SearXNG needs its config placed at `<APP_DATA_DIR>/data/searxng/settings.yml`. See the app description in Runtipi for the exact command.
 
@@ -529,10 +529,10 @@ Copy `runtipi/apps/olama-intel-gpu/` into your Runtipi `apps/` directory and ref
 ## Directory Structure
 
 ```
-Olama-intelgpu/
+Ollama-intelgpu/
 ├── docker/
 │   ├── Dockerfile               # Ollama + Intel oneAPI GPU drivers
-│   ├── docker-compose.yml       # Full stack: portal + olama + open-webui + model-manager + searxng + pipelines + dozzle
+│   ├── docker-compose.yml       # Full stack: portal + ollama + open-webui + model-manager + searxng + pipelines + dozzle
 │   ├── portal/
 │   │   ├── Dockerfile           # nginx:alpine + gettext (envsubst)
 │   │   ├── nginx.conf           # Static file server on port 8080
@@ -552,14 +552,14 @@ Olama-intelgpu/
 │   └── logs.sh                  # Log viewer, exporter, debug mode toggle
 ├── runtipi/
 │   └── apps/
-│       └── olama-intel-gpu/
+│       └── ollama-intel-gpu/
 │           ├── config.json
 │           ├── docker-compose.yml
 │           └── metadata/
 │               └── description.md
 └── .env.example                 # All configurable environment variables
 
-${DATA_DIR}/                     # Host storage (default /opt/olama)
+${DATA_DIR}/                     # Host storage (default /opt/ollama)
 ├── models/                      # Ollama model weights
 ├── webui/                       # Chat history, RAG, settings
 ├── searxng/                     # SearXNG runtime state
@@ -619,12 +619,12 @@ Items discovered during a full codebase audit. Grouped by severity — address t
 ### Inconsistencies
 
 **9. `logs.sh` does not work with Runtipi containers**
-- The `CNAME` map in `scripts/logs.sh` is hardcoded to the standalone container names (`olama`, `olama-open-webui`, etc.). Runtipi uses different names (`olama-intel-gpu`, `olama-intel-gpu-webui`, etc.).
+- The `CNAME` map in `scripts/logs.sh` is hardcoded to the standalone container names (`ollama`, `ollama-open-webui`, etc.). Runtipi uses different names (`ollama-intel-gpu`, `ollama-intel-gpu-webui`, etc.).
 - **Fix needed:** Either document that the scripts folder is standalone-only, or add a `--profile runtipi` flag that swaps the container name map.
 
-**10. Runtipi `olama-intel-gpu/config.json` has an empty description**
+**10. Runtipi `ollama-intel-gpu/config.json` has an empty description**
 - `"description": ""` means the Runtipi app store shows a blank entry for the Intel GPU variant.
-- **Fix needed:** Add a short description string mirroring the one already in `runtipi/apps/olama/config.json`.
+- **Fix needed:** Add a short description string mirroring the one already in `runtipi/apps/ollama/config.json`.
 
 **11. Runtipi standalone differences not documented in README**
 - The repo ships two implementations (standalone Intel GPU stack and Runtipi apps), but the README does not explain the functional differences (custom-built Intel image vs. stock `ollama/ollama`, different networking, Traefik HTTPS, no portal in Runtipi version, etc.).

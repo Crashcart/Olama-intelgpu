@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Olama Model Manager — API proxy + built-in model catalog.
+Ollama Model Manager — API proxy + built-in model catalog.
 
 Routes:
   GET  /api/config           → runtime config (URLs for links)
@@ -20,7 +20,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-app = FastAPI(title="Olama Model Manager", docs_url=None, redoc_url=None)
+app = FastAPI(title="Ollama Model Manager", docs_url=None, redoc_url=None)
 
 # The portal (port 45200) fetches /api/health and /api/local cross-origin.
 # Without these headers the browser blocks the response body even though the
@@ -32,7 +32,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-OLLAMA_URL    = os.environ.get("OLLAMA_BASE_URL", "http://olama:11434").rstrip("/")
+OLLAMA_URL    = os.environ.get("OLLAMA_BASE_URL", "http://ollama:11434").rstrip("/")
 OLLAMA_SOCKET = os.environ.get("OLLAMA_SOCKET", "")
 WEBUI_PORT    = os.environ.get("WEBUI_PORT", "45213")
 
