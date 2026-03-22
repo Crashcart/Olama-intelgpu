@@ -544,6 +544,30 @@
 
     <div class="nav-sep"></div>
 
+    <!-- Memory -->
+    <div class="nav-item">
+      <button class="nav-btn" id="btn-memory" onclick="showFrame('memory')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a10 10 0 1 0 10 10"/>
+          <path d="M12 6v6l4 2"/>
+          <circle cx="18" cy="6" r="3" fill="currentColor" stroke="none" opacity=".4"/>
+          <path d="M18 3v3h3" stroke-width="1.5"/>
+        </svg>
+        Memory
+      </button>
+      <a class="nav-ext" id="ext-memory" href="#" target="_blank" title="Open Memory Browser in new tab">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+          <polyline points="15 3 21 3 21 9"/>
+          <line x1="10" y1="14" x2="21" y2="3"/>
+        </svg>
+      </a>
+    </div>
+
+    <div class="nav-sep"></div>
+
     <!-- Logs -->
     <div class="nav-item">
       <button class="nav-btn" id="btn-logs" onclick="showFrame('logs')">
@@ -593,6 +617,7 @@
   <iframe id="frame-chat"   title="Open WebUI"></iframe>
   <iframe id="frame-models" title="Model Manager"></iframe>
   <iframe id="frame-tasks"  title="Ghost Runner" allow="microphone"></iframe>
+  <iframe id="frame-memory" title="Memory Browser"></iframe>
   <iframe id="frame-logs"   title="Dozzle Logs"></iframe>
 
   <!-- Crit Issues: inline panel, no iframe needed -->
@@ -654,6 +679,7 @@ const PORTS = {
   chat:   ${WEBUI_PORT},
   models: ${MODEL_MANAGER_PORT},
   tasks:  ${GHOST_RUNNER_PORT},
+  memory: ${MEMORY_PORT},
   logs:   ${DOZZLE_PORT},
 };
 
@@ -667,7 +693,7 @@ function svcUrl(key) {
 
 /* ── State ──────────────────────────────────────────────────── */
 let current = 'chat';
-const everLoaded = { chat: false, models: false, tasks: false, logs: false };
+const everLoaded = { chat: false, models: false, tasks: false, memory: false, logs: false };
 
 /* ── Init ───────────────────────────────────────────────────── */
 function init() {
@@ -770,6 +796,7 @@ const SERVICES = [
   { id: 'webui',     name: 'Open WebUI',    mode: 'nocors', port: PORTS.chat },
   { id: 'manager',   name: 'Model Manager', mode: 'nocors', port: PORTS.models },
   { id: 'tasks',     name: 'Ghost Runner',  mode: 'nocors', port: PORTS.tasks },
+  { id: 'memory',    name: 'Memory',        mode: 'nocors', port: PORTS.memory },
   { id: 'dozzle',    name: 'Log Viewer',    mode: 'nocors', port: PORTS.logs },
 ];
 
