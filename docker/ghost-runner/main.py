@@ -32,8 +32,29 @@ from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-OLLAMA_URL = os.environ.get("OLLAMA_BASE_URL", "http://olama:11434").rstrip("/")
-DB_PATH    = os.environ.get("DB_PATH", "/data/ghost.db")
+OLLAMA_URL    = os.environ.get("OLLAMA_BASE_URL", "http://olama:11434").rstrip("/")
+OLLAMA_SOCKET = os.environ.get("OLLAMA_SOCKET", "")
+DB_PATH       = os.environ.get("DB_PATH", "/data/ghost.db")
+
+# ---------------------------------------------------------------------------
+# Ollama client factory — UDS when available, TCP fallback
+# ---------------------------------------------------------------------------
+
+def _make_ollama_client(**kwargs) -> httpx.AsyncClient:
+    """
+    Return an httpx.AsyncClient pointed at Ollama.
+
+    When OLLAMA_SOCKET is set and the socket file exists, connect via
+    Unix Domain Socket (zero TCP-stack overhead).  Falls back to TCP
+    so the service still works if the uds-proxy container is absent.
+    """
+    if OLLAMA_SOCKET and os.path.exists(OLLAMA_SOCKET):
+        return httpx.AsyncClient(
+            transport=httpx.AsyncHTTPTransport(uds=OLLAMA_SOCKET),
+            base_url="http://ollama",
+            **kwargs,
+        )
+    return httpx.AsyncClient(base_url=OLLAMA_URL, **kwargs)
 
 # ---------------------------------------------------------------------------
 # Database helpers
@@ -83,10 +104,10 @@ async def _generate(task_id: str, model: str, prompt: str) -> None:
         async with aiosqlite.connect(DB_PATH) as db:
             await db.execute("PRAGMA journal_mode=WAL")
             seq = 0
-            async with httpx.AsyncClient(timeout=None) as client:
+            async with _make_ollama_client(timeout=None) as client:
                 async with client.stream(
                     "POST",
-                    f"{OLLAMA_URL}/api/generate",
+                    "/api/generate",
                     json={"model": model, "prompt": prompt},
                 ) as resp:
                     resp.raise_for_status()
@@ -268,8 +289,8 @@ async def delete_task(task_id: str):
 async def list_models():
     """Proxy Ollama's model list so the client doesn't need cross-origin access."""
     try:
-        async with httpx.AsyncClient(timeout=5) as client:
-            r = await client.get(f"{OLLAMA_URL}/api/tags")
+        async with _make_ollama_client(timeout=5) as client:
+            r = await client.get("/api/tags")
             r.raise_for_status()
             return r.json()
     except Exception:
