@@ -297,6 +297,26 @@ if [[ ! -f "$ENV_FILE" ]]; then
 else
   info "Updating ${ENV_FILE} with current settings..."
 fi
+# Generate secrets on first install (never overwrite if already set).
+# PIPELINES_API_KEY — shared secret between open-webui and pipelines.
+# WEBUI_SECRET_KEY  — JWT signing key; stable so sessions survive restarts.
+_generate_secret_if_missing() {
+  local key="$1" len="$2"
+  local current
+  current="$(grep -E "^${key}=" "$ENV_FILE" 2>/dev/null | tail -1 | cut -d= -f2- | tr -d '"' || true)"
+  if [[ -z "$current" ]]; then
+    local secret
+    secret="$(openssl rand -hex "$len")"
+    _stamp_env "$ENV_FILE" "$key" "$secret"
+    info "Generated ${key} (${len}-byte random key)."
+  else
+    info "${key} already set — keeping existing value."
+  fi
+}
+
+_generate_secret_if_missing PIPELINES_API_KEY 20
+_generate_secret_if_missing WEBUI_SECRET_KEY  32
+
 # Always stamp install-time values so re-runs and upgrades stay consistent.
 # Everything else in the file (API keys, model names, feature flags, etc.) is left untouched.
 _stamp_env "$ENV_FILE" \

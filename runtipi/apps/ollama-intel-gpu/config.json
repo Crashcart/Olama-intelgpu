@@ -7,7 +7,7 @@
   "author": "Crashcart",
   "port": 45213,
   "categories": ["ai"],
-  "description": "",
+  "description": "Full Ollama LLM stack optimized for Intel GPUs (Arc, Iris Xe, integrated graphics). Includes Open WebUI chat interface, self-hosted web search via SearXNG, Python pipelines runtime, and a unified portal. Uses a custom-built image with Intel oneAPI drivers for GPU acceleration.",
   "tipiVersion": 2,
   "version": "latest",
   "no_gui": false,

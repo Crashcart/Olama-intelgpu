@@ -206,7 +206,7 @@ services:
       # Manage active pipelines in Open WebUI: Admin → Settings → Pipelines.
       - ENABLE_OPENAI_API=true
       - OPENAI_API_BASE_URLS=http://pipelines:9099
-      - OPENAI_API_KEYS=${PIPELINES_API_KEY:-0p3n-w3bu!}
+      - OPENAI_API_KEYS=${PIPELINES_API_KEY}
 
       # ── RAG — document Q&A (PDF, DOCX, TXT, URLs) ────────────────────────
       # Upload documents in any chat via the paperclip icon. Open WebUI chunks
@@ -383,7 +383,7 @@ services:
 
     environment:
       # Key must match OPENAI_API_KEYS in open-webui — set both in docker/.env
-      - PIPELINES_API_KEY=${PIPELINES_API_KEY:-0p3n-w3bu!}
+      - PIPELINES_API_KEY=${PIPELINES_API_KEY}
 
     volumes:
       # ── Pipeline scripts (exportable) ─────────────────────────────────────
