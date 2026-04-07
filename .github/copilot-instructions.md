@@ -1,4 +1,4 @@
-# GitHub Copilot Enterprise Instructions — Olama-intelgpu
+# GitHub Copilot Enterprise Instructions — Ollama-intelgpu
 
 > These instructions apply to ALL Copilot interactions (chat, agent, inline, PR review) in this repository.
 
