@@ -205,7 +205,10 @@ def list_drives():
 
 @app.post("/api/file/move")
 def move_file(req: MoveRequest):
-    src = (DATA_DIR / req.path).resolve()
+    # Resolve intermediate '..' components without following the final symlink,
+    # so the DATA_DIR check works correctly even when the source is a symlink.
+    _p = DATA_DIR / req.path
+    src = _p.parent.resolve() / _p.name
 
     # Safety: must be inside DATA_DIR
     try:
@@ -255,7 +258,10 @@ def move_file(req: MoveRequest):
 
 @app.post("/api/file/restore")
 def restore_file(req: RestoreRequest):
-    link = (DATA_DIR / req.path).resolve()
+    # Resolve intermediate '..' without following the final path component so
+    # the DATA_DIR check is not confused by symlinks pointing into DRIVES_DIR.
+    _p = DATA_DIR / req.path
+    link = _p.parent.resolve() / _p.name
 
     try:
         link.relative_to(DATA_DIR.resolve())
