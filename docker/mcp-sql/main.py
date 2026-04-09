@@ -151,7 +151,17 @@ async def _describe_table(database: str, table: str) -> str:
         raise ValueError(f"Invalid table name: {table!r}")
     path = _resolve_db(database)
     async with aiosqlite.connect(_db_uri(path), uri=True) as db:
-        async with db.execute(f"PRAGMA table_info({table})") as cur:
+        # Verify existence via a parameterised query on the system catalog first.
+        # The confirmed name from sqlite_master (not the raw user input) is then
+        # used in the PRAGMA call, which does not support bound parameters.
+        async with db.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table,)
+        ) as cur:
+            row = await cur.fetchone()
+        if not row:
+            raise ValueError(f"Table '{table}' not found in the '{database}' database.")
+        safe_table = row[0]  # name confirmed to exist in the database
+        async with db.execute(f"PRAGMA table_info({safe_table})") as cur:
             rows = await cur.fetchall()
     if not rows:
         raise ValueError(f"Table '{table}' not found in the '{database}' database.")
@@ -169,14 +179,20 @@ async def _describe_table(database: str, table: str) -> str:
 
 
 async def _execute_query(database: str, query: str, limit: int = 100) -> str:
-    normalized = query.strip().upper()
+    # Strip leading/trailing whitespace and collapse inline SQL comments so the
+    # first-token check below cannot be fooled by comments before SELECT.
+    stripped = re.sub(r"/\*.*?\*/|--[^\n]*", " ", query, flags=re.DOTALL).strip()
 
-    # Enforce read-only: only SELECT is allowed
-    if READ_ONLY and not normalized.startswith("SELECT"):
-        raise ValueError(
-            "Only SELECT queries are allowed (READ_ONLY=true). "
-            "Set READ_ONLY=false in docker-compose to enable write access."
-        )
+    # Enforce read-only: the first SQL keyword must be SELECT.
+    # The SQLite URI mode=ro is the hard safeguard (driver-level); this check
+    # gives a clear error message before hitting the driver.
+    if READ_ONLY:
+        first_token = stripped.split()[0].upper() if stripped.split() else ""
+        if first_token != "SELECT":
+            raise ValueError(
+                "Only SELECT queries are allowed (READ_ONLY=true). "
+                "Set READ_ONLY=false in docker/.env to enable write access."
+            )
 
     # Prevent semicolon-chained statements
     if ";" in query:
@@ -184,8 +200,10 @@ async def _execute_query(database: str, query: str, limit: int = 100) -> str:
 
     limit = min(max(1, int(limit)), 1000)
 
-    # Auto-append LIMIT if the query doesn't already have one
-    if "LIMIT" not in normalized:
+    # Auto-append LIMIT if the query doesn't already have one.
+    # Use \b word boundaries to avoid matching 'LIMIT' inside identifiers or
+    # string literals (e.g. a column named 'CLIMIT' would otherwise prevent injection).
+    if not re.search(r"\bLIMIT\b", stripped, re.IGNORECASE):
         query = query.rstrip(" \t\n") + f" LIMIT {limit}"
 
     path = _resolve_db(database)
@@ -235,10 +253,17 @@ async def _dispatch(method: str, params: dict) -> dict:
         try:
             text = await _call_tool(tool_name, arguments)
             return {"content": [{"type": "text", "text": text}]}
-        except Exception as exc:
-            # Return tool errors inside the result (isError=true) per MCP spec
+        except ValueError as exc:
+            # ValueError messages are written by us and describe user-facing problems
+            # (unknown database, invalid table name, non-SELECT query, etc.) — safe to expose.
             return {
                 "content": [{"type": "text", "text": str(exc)}],
+                "isError": True,
+            }
+        except Exception:
+            log.exception("Unexpected error in tool %s", tool_name)
+            return {
+                "content": [{"type": "text", "text": "An internal error occurred executing the tool."}],
                 "isError": True,
             }
 
@@ -303,9 +328,11 @@ async def mcp_endpoint(request: Request):
     try:
         result = await _dispatch(method, params)
     except ValueError as exc:
+        # ValueError messages are written by us (unknown method, etc.) — safe to expose.
+        err_msg = str(exc)
         return JSONResponse({
             "jsonrpc": "2.0",
-            "error": {"code": -32601, "message": str(exc)},
+            "error": {"code": -32601, "message": err_msg},
             "id": rpc_id,
         })
     except Exception:
