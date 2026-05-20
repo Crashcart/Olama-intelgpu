@@ -1,0 +1,33 @@
+{
+  "env": {
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "50",
+    "AI_RULES_TOKEN": ""
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel 2>/dev/null)/scripts/check-rules-updates.sh\" \"$(jq -r '.rulesRepo // empty' \"$(git rev-parse --show-toplevel 2>/dev/null)/.claude/settings.json\" 2>/dev/null)\" \"claude\" 2>/dev/null || true",
+            "statusMessage": "Checking for rule updates..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=$(jq -r '.tool_response.filePath // .tool_input.file_path // empty' 2>/dev/null); [ -z \"$f\" ] && exit 0; case \"$f\" in *.json) prettier --write \"$f\" 2>/dev/null && echo \"✓ Formatted: $(basename $f)\";; esac || true"
+          }
+        ]
+      }
+    ]
+  },
+  "rulesRepo": "https://github.com/crashcart/ai-rules",
+  "rulesVersion": "1.6.1"
+}
