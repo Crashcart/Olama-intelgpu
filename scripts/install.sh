@@ -279,6 +279,21 @@ elif [[ -f "${DATA_DIR}/searxng/settings.yml" ]] \
   warn "  sed -i 's/secret_key: .*/secret_key: \"'\"$(openssl rand -hex 32)\"'\"/' \"${DATA_DIR}/searxng/settings.yml\""
 fi
 
+# Copy bundled pipelines to the data directory on first install.
+# The Pipelines container mounts ${DATA_DIR}/pipelines:/app/pipelines so any
+# .py files here are auto-loaded when the container starts.
+_PIPELINES_DEST="${DATA_DIR}/pipelines"
+for _pl_src in "${DOCKER_DIR}/pipelines"/*.py; do
+  [[ -f "$_pl_src" ]] || continue
+  _pl_name="$(basename "$_pl_src")"
+  if [[ ! -f "${_PIPELINES_DEST}/${_pl_name}" ]]; then
+    cp "$_pl_src" "${_PIPELINES_DEST}/${_pl_name}"
+    success "Installed pipeline: ${_pl_name} → ${_PIPELINES_DEST}/"
+  else
+    info "Pipeline ${_pl_name} already present — skipping (edit ${_PIPELINES_DEST}/${_pl_name} to customise)."
+  fi
+done
+
 # ── Write docker/.env ─────────────────────────────────────────────────────────
 # _stamp_env applies (or updates) a set of key=value lines in the .env file.
 # It replaces existing keys in-place and appends any key that is missing.
