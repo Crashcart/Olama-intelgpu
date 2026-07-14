@@ -24,33 +24,23 @@ from pydantic import BaseModel
 
 # ── Heuristics for deciding when to trigger a web search ──────────────────────
 
-_QUESTION_WORDS = re.compile(
-    r"\b(who|what|when|where|why|how|which|whose|whom)\b",
-    re.IGNORECASE,
-)
-
+# Only explicit freshness/search cues trigger a search. Generic question
+# words are deliberately excluded: on CPU-only hosts the injected results
+# add hundreds of prompt tokens, so search must stay opt-in per message.
 _SEARCH_TRIGGERS = re.compile(
-    r"\b(search|find|look up|google|latest|recent|current|news|today|"
-    r"right now|as of|update|price|stock|weather|score|result|release|"
-    r"available|exist|happened|announce|just|new)\b",
-    re.IGNORECASE,
-)
-
-_CONVERSATIONAL = re.compile(
-    r"^\s*(hi|hello|hey|thanks|thank you|ok|okay|yes|no|sure|"
-    r"good|great|cool|got it|sounds good|bye|goodbye)[.!?]?\s*$",
+    r"\b(search|look up|google|latest|recent|current|news|today|"
+    r"right now|as of|price|stock|weather|score|release)\b",
     re.IGNORECASE,
 )
 
 MAX_QUERY_LEN = 120
+MAX_SNIPPET_LEN = 200
 
 
 def _should_search(text: str) -> bool:
-    if _CONVERSATIONAL.match(text):
-        return False
     if len(text.split()) < 3:
         return False
-    return bool(_QUESTION_WORDS.search(text) or _SEARCH_TRIGGERS.search(text))
+    return bool(_SEARCH_TRIGGERS.search(text))
 
 
 def _trim_query(text: str) -> str:
@@ -72,8 +62,8 @@ class Pipeline:
         pipelines: List[str] = ["*"]
         priority: int = 0
         searxng_url: str = "http://searxng:8080"
-        max_results: int = 3
-        timeout_seconds: int = 6
+        max_results: int = 2
+        timeout_seconds: int = 4
         enabled: bool = True
 
     def __init__(self):
@@ -143,11 +133,11 @@ class Pipeline:
         for i, r in enumerate(results, 1):
             title = r.get("title", "").strip()
             url = r.get("url", "").strip()
-            snippet = r.get("content", "").strip()
+            snippet = r.get("content", "").strip()[:MAX_SNIPPET_LEN]
             lines.append(f"\n{i}. {title}")
             if url:
                 lines.append(f"   Source: {url}")
             if snippet:
                 lines.append(f"   {snippet}")
-        lines.append("\nUse the above search results to inform your answer where relevant.")
+        lines.append("\nUse these results where relevant.")
         return "\n".join(lines)
