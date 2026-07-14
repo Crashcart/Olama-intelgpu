@@ -87,8 +87,9 @@ class Pipeline:
     async def on_shutdown(self):
         pass
 
-    def inlet(self, body: dict, user: Optional[dict] = None) -> dict:
-        """Called before the request reaches the model."""
+    async def inlet(self, body: dict, user: Optional[dict] = None) -> dict:
+        """Called before the request reaches the model (must be async — the
+        pipelines framework awaits it unconditionally)."""
         if not self.valves.enabled:
             return body
 
