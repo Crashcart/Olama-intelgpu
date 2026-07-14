@@ -427,6 +427,7 @@ services:
     build:
       context: ./model-manager
       dockerfile: Dockerfile
+      network: host          # host DNS — container bridge DNS is unreliable on some hosts
     image: ollama-model-manager:latest
     container_name: ollama-model-manager
     restart: unless-stopped
@@ -486,6 +487,7 @@ services:
     build:
       context: ./uds-proxy
       dockerfile: Dockerfile
+      network: host          # host DNS — container bridge DNS is unreliable on some hosts
     image: ollama-uds-proxy:latest
     container_name: ollama-uds-proxy
     restart: unless-stopped
@@ -539,6 +541,7 @@ services:
     build:
       context: ./memory-browser
       dockerfile: Dockerfile
+      network: host          # host DNS — container bridge DNS is unreliable on some hosts
     image: ollama-memory-browser:latest
     container_name: ollama-memory-browser
     restart: unless-stopped
@@ -589,6 +592,7 @@ services:
     build:
       context: ./file-catalog
       dockerfile: Dockerfile
+      network: host          # host DNS — container bridge DNS is unreliable on some hosts
     image: ollama-file-catalog:latest
     container_name: ollama-file-catalog
     restart: unless-stopped
@@ -642,6 +646,7 @@ services:
     build:
       context: ./ghost-runner
       dockerfile: Dockerfile
+      network: host          # host DNS — container bridge DNS is unreliable on some hosts
     image: ollama-ghost-runner:latest
     container_name: ollama-ghost-runner
     restart: unless-stopped
@@ -702,6 +707,7 @@ services:
     build:
       context: ./portal
       dockerfile: Dockerfile
+      network: host          # host DNS — container bridge DNS is unreliable on some hosts
     image: ollama-portal:latest
     container_name: ollama-portal
     restart: unless-stopped
