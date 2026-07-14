@@ -44,6 +44,9 @@ RUN curl -fsSL --retry 3 --retry-delay 5 \
        > /etc/apt/sources.list.d/intel-gpu-jammy.list
 
 # Install Intel GPU compute runtime (OpenCL + Level Zero)
+# NOTE: the unified repo's runtime supports Xe-architecture GPUs only
+# (Iris Xe / 11th-gen+ iGPU, Arc dGPU). Gen9/Gen11 iGPUs (UHD 6xx) are NOT
+# detected — clinfo reports 0 platforms and ollama falls back to CPU.
 # intel-opencl-icd  — OpenCL ICD for all Intel GPU generations (4th gen+)
 # libze1            — Level Zero loader (10th-gen+ iGPU, Arc dGPU)
 # libze-intel-gpu1  — Level Zero GPU driver

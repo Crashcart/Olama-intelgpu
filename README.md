@@ -37,6 +37,10 @@ All data is stored under a single configurable `DATA_DIR` on the host — no ano
 
 - **Linux** with an Intel GPU (Arc, Iris Xe, or integrated graphics)
   - Confirm the device is visible: `ls /dev/dri/renderD*`
+  - **Gen9/Gen11 iGPUs (UHD 6xx on 6th–10th gen CPUs) are not GPU-accelerated.**
+    Intel's current compute runtime dropped pre-Xe support, and these iGPUs share
+    memory bandwidth with the CPU so they wouldn't be faster anyway. The stack
+    detects this and falls back to CPU inference automatically — everything still works.
 - **Docker** and **Docker Compose** — the installer will install them automatically if they are missing
 
 ---
