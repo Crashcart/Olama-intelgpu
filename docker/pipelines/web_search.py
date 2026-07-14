@@ -16,7 +16,7 @@ Installation (automatic via install.sh):
 """
 
 import re
-from typing import Optional
+from typing import List, Optional
 
 import requests
 from pydantic import BaseModel
@@ -67,6 +67,10 @@ def _trim_query(text: str) -> str:
 
 class Pipeline:
     class Valves(BaseModel):
+        # Filter-pipeline contract fields (required by the pipelines framework):
+        # target model ids this filter attaches to ("*" = all) and its run order.
+        pipelines: List[str] = ["*"]
+        priority: int = 0
         searxng_url: str = "http://searxng:8080"
         max_results: int = 3
         timeout_seconds: int = 6
@@ -76,6 +80,12 @@ class Pipeline:
         self.name = "Web Search (SearXNG)"
         self.type = "filter"
         self.valves = self.Valves()
+
+    async def on_startup(self):
+        pass
+
+    async def on_shutdown(self):
+        pass
 
     def inlet(self, body: dict, user: Optional[dict] = None) -> dict:
         """Called before the request reaches the model."""
